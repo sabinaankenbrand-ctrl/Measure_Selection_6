@@ -4,15 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Measure Selection</title>
-
+ 
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
+/* ==================================================================
+   RESET
+   ================================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+html, body {
   height: 100%;
   overflow: hidden;
 }
-
+ 
+/* ==================================================================
+   PAGE SHELL (body, header)
+   ================================================================== */
 body {
   font-family: system-ui, sans-serif;
   background: #eef7fa;
@@ -20,536 +26,546 @@ body {
   display: flex;
   flex-direction: column;
 }
-
-  header {
+ 
+header {
   background: #1187a7;
   color: white;
   padding: 12px 20px;
   flex-shrink: 0;
 }
-
-  header h1 {
-    font-size: 1rem;
-    font-weight: 600;
-  }
-
-  #reach-display, #problem-display {
-    font-size: 0.75rem;
-    opacity: 0.9;
-    margin-top: 3px;
-  }
-
-  .layout {
+ 
+header h1 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+ 
+#reach-display, #problem-display {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-top: 3px;
+}
+ 
+/* ==================================================================
+   MAIN REFINEMENT LAYOUT (suggested measures + selected panel)
+   ================================================================== */
+.layout {
   display: flex;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
-
-  .panel-left {
-    width: 60%;
-    background: white;
-    border-right: 1px solid #d0dce8;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .panel-right {
-    flex: 1;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .panel-header {
-    padding: 10px 14px;
-    border-bottom: 1px solid #d0dce8;
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #8aa0b0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-
-  .selected-count {
-    background: #1187a7;
-    color: white;
-    border-radius: 8px;
-    padding: 1px 7px;
-    font-size: 0.65rem;
-  }
-
-  .list-scroll {
+ 
+.panel-left {
+  width: 60%;
+  background: white;
+  border-right: 1px solid #d0dce8;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+ 
+.panel-right {
+  flex: 1;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+ 
+.panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #d0dce8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8aa0b0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+ 
+.selected-count {
+  background: #1187a7;
+  color: white;
+  border-radius: 8px;
+  padding: 1px 7px;
+  font-size: 0.65rem;
+}
+ 
+.list-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
-
-  .group-header {
-    padding: 8px 14px 4px;
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 1;
-    border-bottom: 1px solid #e8eef5;
-  }
-
-  .group-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #4a6070;
-  }
-
-  .measure-item {
-    padding: 7px 14px 7px 18px;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    cursor: pointer;
-    border-left: 3px solid transparent;
-    transition: background 0.1s;
-  }
-
-  .measure-item:hover {
-    background: #eef7fa;
-    border-left-color: #1187a7;
-  }
-
-  .measure-item.checked {
-    background: #e6f5fa;
-    border-left-color: #1187a7;
-  }
-
-  .measure-item input[type="checkbox"] {
-    margin-top: 2px;
-    flex-shrink: 0;
-    accent-color: #1187a7;
-    width: 14px;
-    height: 14px;
-    pointer-events: none;
-  }
-
-  .measure-id {
-    font-size: 0.63rem;
-    font-weight: 600;
-    color: #1187a7;
-    background: #d6eef5;
-    border-radius: 3px;
-    padding: 2px 4px;
-    flex-shrink: 0;
-    margin-top: 1px;
-    white-space: nowrap;
-  }
-
-  .measure-name {
-    font-size: 0.81rem;
-    color: #2c3e50;
-    line-height: 1.4;
-  }
-
-  .empty-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #aaa;
-    font-size: 0.82rem;
-    text-align: center;
-    padding: 20px;
-  }
-
-  .selected-item {
-    padding: 7px 14px 7px 18px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    border-left: 3px solid #1187a7;
-    border-bottom: 1px solid #e8eef5;
-  }
-
-  .selected-item .sid {
-    font-size: 0.63rem;
-    font-weight: 600;
-    color: #1187a7;
-    background: #d6eef5;
-    border-radius: 3px;
-    padding: 2px 4px;
-    flex-shrink: 0;
-    white-space: nowrap;
-    margin-top: 1px;
-  }
-
-  .selected-item .sname {
-    font-size: 0.81rem;
-    color: #2c3e50;
-    line-height: 1.4;
-  }
-
-  .footer {
+ 
+.group-header {
+  padding: 8px 14px 4px;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+  border-bottom: 1px solid #e8eef5;
+}
+ 
+.group-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4a6070;
+}
+ 
+.measure-item {
+  padding: 7px 14px 7px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.1s;
+}
+ 
+.measure-item:hover {
+  background: #eef7fa;
+  border-left-color: #1187a7;
+}
+ 
+.measure-item.checked {
+  background: #e6f5fa;
+  border-left-color: #1187a7;
+}
+ 
+.measure-item input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #1187a7;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+ 
+.measure-id {
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: #1187a7;
+  background: #d6eef5;
+  border-radius: 3px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+ 
+.measure-name {
+  font-size: 0.81rem;
+  color: #2c3e50;
+  line-height: 1.4;
+}
+ 
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #aaa;
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 20px;
+}
+ 
+.selected-item {
+  padding: 7px 14px 7px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-left: 3px solid #1187a7;
+  border-bottom: 1px solid #e8eef5;
+}
+ 
+.selected-item .sid {
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: #1187a7;
+  background: #d6eef5;
+  border-radius: 3px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+ 
+.selected-item .sname {
+  font-size: 0.81rem;
+  color: #2c3e50;
+  line-height: 1.4;
+}
+ 
+.footer {
   padding: 10px 14px;
   border-top: 1px solid #d0dce8;
   flex-shrink: 0;
   background: white;
 }
+ 
+.confirm-button {
+  width: 100%;
+  padding: 9px;
+  background: #1187a7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+ 
+.confirm-button:hover { background: #0e7692; }
+.confirm-button:disabled { background: #8aa0b0; cursor: not-allowed; }
+ 
+.status-message {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #4a6070;
+}
+ 
+.status-message.success { color: #1e8449; }
+.status-message.error { color: #c0392b; }
+ 
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #d0dce8; border-radius: 2px; }
+ 
+/* ==================================================================
+   CONTEXT FILTERS PANEL (impounded / barrier questions)
+   ================================================================== */
+.context-panel {
+  background: #f8fbfd;
+  border: 1px solid #d0dce8;
+  border-radius: 8px;
+  margin: 6px 14px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
 
-  .confirm-button {
-    width: 100%;
-    padding: 9px;
-    background: #1187a7;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-family: system-ui, sans-serif;
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
+.context-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8aa0b0;
+  margin-bottom: 4px;
+}
 
-  .confirm-button:hover { background: #0e7692; }
-  .confirm-button:disabled { background: #8aa0b0; cursor: not-allowed; }
+.context-question-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
 
-  .status-message {
-    margin-top: 8px;
-    font-size: 0.75rem;
-    line-height: 1.35;
-    color: #4a6070;
-  }
+.context-question-row .context-question-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2c3e50;
+  min-width: 220px;
+}
 
-  .status-message.success { color: #1e8449; }
-  .status-message.error { color: #c0392b; }
+.radio-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-thumb { background: #d0dce8; border-radius: 2px; }
-
-
-  .context-panel {
-    background: #ffffff;
-    border-bottom: 1px solid #d0dce8;
-    padding: 10px 14px;
-    flex-shrink: 0;
-  }
-
-  .context-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #8aa0b0;
-    margin-bottom: 8px;
-  }
-
-  .context-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
-    gap: 12px;
-  }
-
-  .context-question {
-    border: 1px solid #d0dce8;
-    border-radius: 8px;
-    padding: 10px;
-    background: #f8fbfd;
-  }
-
-  .context-question-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    margin-bottom: 7px;
-    color: #2c3e50;
-  }
-
-  .radio-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .radio-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    border: 1px solid #c8d7e3;
-    border-radius: 999px;
-    padding: 5px 9px;
-    font-size: 0.78rem;
-    background: white;
-    cursor: pointer;
-  }
-
-  .radio-pill input { accent-color: #1187a7; }
-
-  .context-actions {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .secondary-button {
-    padding: 8px 12px;
-    background: white;
-    color: #1187a7;
-    border: 1px solid #1187a7;
-    border-radius: 6px;
-    font-family: system-ui, sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .secondary-button:hover { background: #eef7fa; }
-
-  .context-note {
-    font-size: 0.75rem;
-    color: #4a6070;
-    line-height: 1.35;
-  }
-
-  .hidden { display: none !important; }
-
-  .assignment-dashboard {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    background: white;
-  }
-
-  .assignment-tabs {
-    padding: 10px;
-    border-bottom: 1px solid #d0dce8;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    background: #f8fbfd;
-  }
-
-  .assignment-tab {
-    border: 1px solid #c8d7e3;
-    border-radius: 7px;
-    padding: 6px 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: white;
-    color: #8aa0b0;
-    cursor: pointer;
-  }
-
-  .assignment-tab.has-none {
-    color: #aab8c5;
-    background: #f6f8fa;
-  }
-
-  .assignment-tab.assigned {
-    color: #166534;
-    border-color: #22c55e;
-    background: #f0fdf4;
-  }
-
-  .assignment-tab.pending {
-    color: #b91c1c;
-    border-color: #ef4444;
-    background: #fff7ed;
-  }
-
-  .assignment-tab.active {
-    color: white;
-    background: #1187a7;
-    border-color: #1187a7;
-  }
-
-  .assignment-body {
-    flex: 1;
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: 48% 52%;
-    min-height: 0;
-  }
-
-  .assignment-list-panel, .assignment-tool-panel {
-    padding: 14px;
-    overflow-y: auto;
-    min-height: 0;
-  }
-
-  .assignment-list-panel {
-    border-right: 1px solid #d0dce8;
-  }
-
-  .assignment-title {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 5px;
-    color: #2c3e50;
-  }
-
-  .assignment-summary {
-    font-size: 0.78rem;
-    color: #4a6070;
-    margin-bottom: 10px;
-  }
-
-  .assignment-measure {
-    border: 1px solid #e1eaf2;
-    border-radius: 7px;
-    padding: 8px;
-    margin-bottom: 7px;
-    background: #fff;
-  }
-
-  .assignment-measure.assigned {
-    border-left: 4px solid #22c55e;
-  }
-
-  .assignment-measure.pending {
-    border-left: 4px solid #ef4444;
-  }
-
-  .assignment-measure-head {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .assignment-status-badge {
-    margin-left: auto;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 999px;
-    text-transform: uppercase;
-  }
-
-  .assignment-status-badge.assigned { background: #dcfce7; color: #166534; }
-  .assignment-status-badge.pending { background: #fee2e2; color: #991b1b; }
-  .assignment-status-badge.unclassified { background: #e5e7eb; color: #374151; }
-
-  .tool-card {
-    border: 1px solid #d0dce8;
-    border-radius: 8px;
-    padding: 12px;
-    background: #f8fbfd;
-  }
-
-  .tool-card label {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #4a6070;
-    margin: 8px 0 4px;
-  }
-
-  .tool-card input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #c8d7e3;
-    border-radius: 6px;
-    font-family: system-ui, sans-serif;
-  }
-
-  .tool-hint {
-    font-size: 0.76rem;
-    color: #4a6070;
-    line-height: 1.45;
-    margin-bottom: 8px;
-  }
-
-
-  .assignment-dashboard-header {
-    padding: 10px 14px;
-    border-bottom: 1px solid #d0dce8;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    background: white;
-    flex-shrink: 0;
-  }
-
-  .assignment-dashboard-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #8aa0b0;
-  }
-
-  .back-button {
-    padding: 7px 11px;
-    background: white;
-    color: #1187a7;
-    border: 1px solid #1187a7;
-    border-radius: 6px;
-    font-family: system-ui, sans-serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .back-button:hover { background: #eef7fa; }
-
+.context-actions {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
+.context-actions {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
+.secondary-button {
+  padding: 8px 12px;
+  background: white;
+  color: #1187a7;
+  border: 1px solid #1187a7;
+  border-radius: 6px;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+ 
+.secondary-button:hover { background: #eef7fa; }
+ 
+.context-note {
+  font-size: 0.75rem;
+  color: #4a6070;
+  line-height: 1.35;
+}
+ 
+.edit-answers-button {
+  background: none;
+  border: none;
+  color: #1187a7;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 14px;
+  margin: 0;
+}
+ 
+.edit-answers-button:hover { color: #0e7692; }
+ 
+.hidden { display: none !important; }
+ 
+/* ==================================================================
+   ASSIGNMENT DASHBOARD (tabs, list panel, tool panel)
+   ================================================================== */
+.assignment-dashboard {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+ 
+.assignment-tabs {
+  padding: 10px;
+  border-bottom: 1px solid #d0dce8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: #f8fbfd;
+}
+ 
+.assignment-tab {
+  border: 1px solid #c8d7e3;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: white;
+  color: #8aa0b0;
+  cursor: pointer;
+}
+ 
+.assignment-tab.has-none {
+  color: #aab8c5;
+  background: #f6f8fa;
+}
+ 
+.assignment-tab.assigned {
+  color: #166534;
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+ 
+.assignment-tab.pending {
+  color: #b91c1c;
+  border-color: #ef4444;
+  background: #fff7ed;
+}
+ 
+.assignment-tab.active {
+  color: white;
+  background: #1187a7;
+  border-color: #1187a7;
+}
+ 
+.assignment-body {
+  flex: 1;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 48% 52%;
+  min-height: 0;
+}
+ 
+.assignment-list-panel, .assignment-tool-panel {
+  padding: 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+ 
+.assignment-list-panel {
+  border-right: 1px solid #d0dce8;
+}
+ 
+.assignment-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: #2c3e50;
+}
+ 
+.assignment-summary {
+  font-size: 0.78rem;
+  color: #4a6070;
+  margin-bottom: 10px;
+}
+ 
+.assignment-measure {
+  border: 1px solid #e1eaf2;
+  border-radius: 7px;
+  padding: 8px;
+  margin-bottom: 7px;
+  background: #fff;
+}
+ 
+.assignment-measure.assigned {
+  border-left: 4px solid #22c55e;
+}
+ 
+.assignment-measure.pending {
+  border-left: 4px solid #ef4444;
+}
+ 
+.assignment-measure-head {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+ 
+.assignment-status-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+ 
+.assignment-status-badge.assigned { background: #dcfce7; color: #166534; }
+.assignment-status-badge.pending { background: #fee2e2; color: #991b1b; }
+.assignment-status-badge.unclassified { background: #e5e7eb; color: #374151; }
+ 
+.tool-card {
+  border: 1px solid #d0dce8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbfd;
+}
+ 
+.tool-card label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #4a6070;
+  margin: 8px 0 4px;
+}
+ 
+.tool-card input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #c8d7e3;
+  border-radius: 6px;
+  font-family: system-ui, sans-serif;
+}
+ 
+.tool-hint {
+  font-size: 0.76rem;
+  color: #4a6070;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+ 
+.assignment-dashboard-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #d0dce8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: white;
+  flex-shrink: 0;
+}
+ 
+.assignment-dashboard-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8aa0b0;
+}
+ 
+.back-button {
+  padding: 7px 11px;
+  background: white;
+  color: #1187a7;
+  border: 1px solid #1187a7;
+  border-radius: 6px;
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+ 
+.back-button:hover { background: #eef7fa; }
 </style>
 </head>
-
+ 
 <body>
-
+ 
 <header>
   <h1>Measure Selection</h1>
   <div id="reach-display"></div>
   <div id="problem-display"></div>
 </header>
-
+ 
 <div id="context-panel" class="context-panel">
   <div class="context-title">Context filters</div>
-  <div class="context-grid">
-    <div class="context-question">
-      <div class="context-question-title">1. Is the reach impounded?</div>
-      <div class="radio-row">
-        <label class="radio-pill"><input type="radio" name="context-impounded" value="yes"> Yes</label>
-        <label class="radio-pill"><input type="radio" name="context-impounded" value="no"> No</label>
-      </div>
-    </div>
-    <div class="context-question">
-      <div class="context-question-title">2. Is there a barrier upstream or downstream of the reach?</div>
-      <div class="radio-row">
-        <label class="radio-pill"><input type="radio" name="context-barrier" value="yes"> Yes</label>
-        <label class="radio-pill"><input type="radio" name="context-barrier" value="no"> No</label>
-      </div>
+  <div class="context-question-row">
+    <span class="context-question-title">Is the reach impounded?</span>
+    <div class="radio-row">
+      <label class="radio-pill"><input type="radio" name="context-impounded" value="yes"> Yes</label>
+      <label class="radio-pill"><input type="radio" name="context-impounded" value="no"> No</label>
     </div>
   </div>
-  <div class="context-actions">
-    <button class="secondary-button" id="context-continue-button" onclick="continueAfterContextQuestions()">Continue to suggested measures</button>
-    <span class="context-note" id="context-note">Answer both questions to filter the problem-based suggested measures.</span>
+  <div class="context-question-row">
+    <span class="context-question-title">Is there a barrier upstream or downstream?</span>
+    <div class="radio-row">
+      <label class="radio-pill"><input type="radio" name="context-barrier" value="yes"> Yes</label>
+      <label class="radio-pill"><input type="radio" name="context-barrier" value="no"> No</label>
+    </div>
   </div>
-</div>
-
+<div class="context-actions">
+    <button class="secondary-button" id="context-continue-button" onclick="continueAfterContextQuestions()">Continue</button>
+    <span class="context-note">Answer both questions to filter the suggested measures.</span>
+  </div>
+ 
+<button class="edit-answers-button hidden" id="edit-context-button" onclick="reopenContextPanel()">
+  Change impounded / barrier answers
+</button>
+ 
 <div class="layout" id="refinement-layout">
-
+ 
   <div class="panel-left">
     <div class="panel-header">Suggested measures</div>
     <div class="list-scroll" id="measure-list">
       <div class="empty-state">Loading active problems...</div>
     </div>
   </div>
-
+ 
   <div class="panel-right">
     <div class="panel-header">
       <span>Selected</span>
       <span class="selected-count" id="selected-count">0</span>
     </div>
-
+ 
     <div class="list-scroll" id="selected-list">
       <div class="empty-state">No measures selected yet.</div>
     </div>
-
+ 
     <div class="footer">
       <button class="confirm-button" id="confirm-button" onclick="confirmSelection()">
         Confirm selection
@@ -557,9 +573,9 @@ body {
       <div class="status-message" id="status-message"></div>
     </div>
   </div>
-
+ 
 </div>
-
+ 
 <div id="assignment-dashboard" class="assignment-dashboard hidden">
   <div class="assignment-dashboard-header">
     <div class="assignment-dashboard-title">Assignment workflow</div>
@@ -571,7 +587,7 @@ body {
     <div id="assignment-tool-panel" class="assignment-tool-panel"></div>
   </div>
 </div>
-
+ 
 <script>
 /* ------------------------------------------------------------------
    CONFIGURATION
