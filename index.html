@@ -243,7 +243,7 @@ header h1 {
   background: #f8fbfd;
   border: 1px solid #d0dce8;
   border-radius: 8px;
-  margin: 8px 14px 10px 14px;
+  margin: 8px 14px 18px 14px;
   padding: 10px 14px;
   flex-shrink: 0;
 }
@@ -388,19 +388,24 @@ header h1 {
 .assignment-body {
   flex: 1;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: 48% 52%;
-  min-height: 0;
-}
-
-.assignment-list-panel, .assignment-tool-panel {
-  padding: 14px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
 .assignment-list-panel {
-  border-right: 1px solid #d0dce8;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.assignment-tool-panel {
+  flex-shrink: 0;
+  padding: 14px;
+  border-top: 1px solid #d0dce8;
+  background: white;
+  overflow-y: auto;
 }
 
 .assignment-title {
@@ -432,10 +437,28 @@ header h1 {
   border-left: 4px solid #ef4444;
 }
 
+.assignment-measure.unkept {
+  opacity: 0.5;
+}
+
+.assignment-measure.unkept .measure-name,
+.assignment-measure.unkept .measure-id {
+  text-decoration: line-through;
+}
+
 .assignment-measure-head {
   display: flex;
   gap: 8px;
   align-items: flex-start;
+}
+
+.assignment-keep-checkbox {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #1187a7;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
 }
 
 .assignment-status-badge {
@@ -814,10 +837,7 @@ var CONFIG = {
   // Text shown in the assignment dashboard. These labels should match the
   // names of the edit tools/panels you create in Experience Builder.
   ASSIGNMENT_EDIT_TOOL_LABELS: {
-    "Dam Measures": "Edit Barrier tool",
-    "Fish Dam Measures": "Edit Barrier tool",
-    "Flow Dam Measures": "Edit Barrier tool",
-    "Hydropeaking Measures": "Edit Barrier tool",
+    "Dam and Barrier Measures": "Edit Barrier tool",
     "Dike Measures": "Dike edit tool",
     "Sidearm Measures": "Sidearm edit tool",
     "Groyne Measures": "Groyne edit tool",
@@ -935,20 +955,20 @@ var MEASURES = [
 ------------------------------------------------------------------ */
 
 var MEASURE_ASSIGNMENT_RULES = {
-  "D4A_001": { "measure_name": "Prevent sedimentation at the dam by artificial turbulence", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_002": { "measure_name": "Prevent sedimentation at transversal barriers through bypass systems", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_003": { "measure_name": "Sediment transfer through the turbines", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_004": { "measure_name": "Controlled sediment transfer at transversal barriers", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_005": { "measure_name": "Removal of transversal barriers", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_006": { "measure_name": "Modification of transversal barrier", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_007": { "measure_name": "Minimize fixed weir or sill height", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_008": { "measure_name": "Minimize dam or weir width", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_009": { "measure_name": "Open ship locks for local remobilization of sediments", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_010": { "measure_name": "Modify weir fields to increase sediment continuity", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_011": { "measure_name": "Install large bottom outlets or gates for venting, sluicing or flushing", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_012": { "measure_name": "Pressure scouring", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_013": { "measure_name": "Local dredging at intake structures", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_014": { "measure_name": "Innovative hydropower plants", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_001": { "measure_name": "Prevent sedimentation at the dam by artificial turbulence", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_002": { "measure_name": "Prevent sedimentation at transversal barriers through bypass systems", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_003": { "measure_name": "Sediment transfer through the turbines", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_004": { "measure_name": "Controlled sediment transfer at transversal barriers", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_005": { "measure_name": "Removal of transversal barriers", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_006": { "measure_name": "Modification of transversal barrier", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_007": { "measure_name": "Minimize fixed weir or sill height", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_008": { "measure_name": "Minimize dam or weir width", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_009": { "measure_name": "Open ship locks for local remobilization of sediments", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_010": { "measure_name": "Modify weir fields to increase sediment continuity", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_011": { "measure_name": "Install large bottom outlets or gates for venting, sluicing or flushing", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_012": { "measure_name": "Pressure scouring", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_013": { "measure_name": "Local dredging at intake structures", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_014": { "measure_name": "Innovative hydropower plants", "D4A_group": "Enhance sediment continuity at the dam", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_015": { "measure_name": "Prevent sedimentation in the reservoir or impoundment by venting turbid density currents", "D4A_group": "Enhance sediment continuity in the reservoir", "assignment_group": "Reach Impoundment Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "Yes" },
   "D4A_016": { "measure_name": "Prevent sedimentation in the reservoir or impoundment by artificial turbulence", "D4A_group": "Enhance sediment continuity in the reservoir", "assignment_group": "Reach Impoundment Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "Yes" },
   "D4A_017": { "measure_name": "Prevent sedimentation in the reservoir or impoundment with a sediment bypass", "D4A_group": "Enhance sediment continuity in the reservoir", "assignment_group": "Reach Impoundment Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "Yes" },
@@ -961,18 +981,18 @@ var MEASURE_ASSIGNMENT_RULES = {
   "D4A_024": { "measure_name": "Off-stream reservoir", "D4A_group": "Enhance sediment continuity in the reservoir", "assignment_group": "Reach Impoundment Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "Yes" },
   "D4A_025": { "measure_name": "Optimized flushing or sluicing strategies for dams in series", "D4A_group": "Enhance sediment continuity in the reservoir", "assignment_group": "Reach Impoundment Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "Yes" },
   "D4A_026": { "measure_name": "Integrated dredging and feeding management", "D4A_group": "Enhance sediment continuity in the reservoir", "assignment_group": "Reach Impoundment Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "Yes" },
-  "D4A_027": { "measure_name": "Develop early warning system at hydropower dam with operational adjustment", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_028": { "measure_name": "Increase weir and spill overflow at hydropower dams", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_029": { "measure_name": "Implement technical fishway", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_030": { "measure_name": "Implement nature-like fishway", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_031": { "measure_name": "Implement fish lifts, locks or pumps", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_032": { "measure_name": "Collection and transport systems for fish", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_033": { "measure_name": "Install fine fish protection screens with bypass systems", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_034": { "measure_name": "Implement barrier nets with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_035": { "measure_name": "Implement fish guidance structures with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_036": { "measure_name": "Implement skimming walls and bottom overlays with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_037": { "measure_name": "Install sensory behavioural barriers with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_038": { "measure_name": "Ecologically improved turbines", "D4A_group": "Improve fish continuity", "assignment_group": "Fish Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_027": { "measure_name": "Develop early warning system at hydropower dam with operational adjustment", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_028": { "measure_name": "Increase weir and spill overflow at hydropower dams", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_029": { "measure_name": "Implement technical fishway", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_030": { "measure_name": "Implement nature-like fishway", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_031": { "measure_name": "Implement fish lifts, locks or pumps", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_032": { "measure_name": "Collection and transport systems for fish", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_033": { "measure_name": "Install fine fish protection screens with bypass systems", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_034": { "measure_name": "Implement barrier nets with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_035": { "measure_name": "Implement fish guidance structures with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_036": { "measure_name": "Implement skimming walls and bottom overlays with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_037": { "measure_name": "Install sensory behavioural barriers with bypass system", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_038": { "measure_name": "Ecologically improved turbines", "D4A_group": "Improve fish continuity", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_039": { "measure_name": "Removal of riverbed revetment", "D4A_group": "Enhance habitat diversity and quality", "assignment_group": "Reach Measures", "assignment_target": "Reach", "geometry_type": "", "assignment_mode": "automatic", "auto_assign_if_selected": 1, "impoundment": "No" },
   "D4A_040": { "measure_name": "Removal of dikes", "D4A_group": "Improve flood retention through measures at the dike", "assignment_group": "Dike Measures", "assignment_target": "Dike", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_041": { "measure_name": "Local lowering of dike crest for targeted floodplain flooding", "D4A_group": "Improve flood retention through measures at the dike", "assignment_group": "Dike Measures", "assignment_target": "Dike", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
@@ -980,12 +1000,12 @@ var MEASURE_ASSIGNMENT_RULES = {
   "D4A_043": { "measure_name": "Opening dikes", "D4A_group": "Improve flood retention through measures at the dike", "assignment_group": "Dike Measures", "assignment_target": "Dike", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_044": { "measure_name": "Implementing culverts and inlet sluices into the dikes", "D4A_group": "Improve flood retention through measures at the dike", "assignment_group": "Dike Measures", "assignment_target": "Dike", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_045": { "measure_name": "Sidearm and oxbow lake reconnection", "D4A_group": "Improve flood retention through measures in the floodplain", "assignment_group": "Sidearm Measures", "assignment_target": "Side Arm", "geometry_type": "", "assignment_mode": "draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_052": { "measure_name": "Provide minimum flow requirement", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Flow Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_053": { "measure_name": "Provide instream flow requirement", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Flow Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_054": { "measure_name": "Establish dynamic environmental flows", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Flow Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_055": { "measure_name": "Adjusting operational protocols of dams and weirs of hydropower facilities", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Flow Dam Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_056": { "measure_name": "Adjusting operational protocols of dams and weirs of hydropower facilities to reduce hydropeaking", "D4A_group": "Reduce hydropeaking", "assignment_group": "Hydropeaking Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
-  "D4A_057": { "measure_name": "Reduce hydropeaking by installing a retention basin", "D4A_group": "Reduce hydropeaking", "assignment_group": "Hydropeaking Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_052": { "measure_name": "Provide minimum flow requirement", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_053": { "measure_name": "Provide instream flow requirement", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_054": { "measure_name": "Establish dynamic environmental flows", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_055": { "measure_name": "Adjusting operational protocols of dams and weirs of hydropower facilities", "D4A_group": "Provide sufficient residual flow", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_056": { "measure_name": "Adjusting operational protocols of dams and weirs of hydropower facilities to reduce hydropeaking", "D4A_group": "Reduce hydropeaking", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
+  "D4A_057": { "measure_name": "Reduce hydropeaking by installing a retention basin", "D4A_group": "Reduce hydropeaking", "assignment_group": "Dam and Barrier Measures", "assignment_target": "Dam or Barrier", "geometry_type": "", "assignment_mode": "select_existing_or_draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_058": { "measure_name": "Remobilisation of consolidated gravel bars", "D4A_group": "Reduce riverbed erosion", "assignment_group": "Gravel Bars", "assignment_target": "Location of implementation", "geometry_type": "", "assignment_mode": "draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_059": { "measure_name": "Implementation of gravel bars", "D4A_group": "Reduce riverbed erosion", "assignment_group": "Gravel Bars", "assignment_target": "Location of implementation", "geometry_type": "", "assignment_mode": "draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
   "D4A_060": { "measure_name": "Sediment feeding", "D4A_group": "Reduce riverbed erosion", "assignment_group": "Sediment Feeding/Dredging", "assignment_target": "Location of implementation", "geometry_type": "", "assignment_mode": "draw_new", "auto_assign_if_selected": 0, "impoundment": "No" },
@@ -1722,7 +1742,8 @@ async function confirmSelection() {
         group_order: groupOrder,
         assignment_notes: "",
         filter_impounded_answer: currentReachIsImpounded ? "yes" : "no",
-        filter_barrier_answer: currentReachHasBarrierContext ? "yes" : "no"
+        filter_barrier_answer: currentReachHasBarrierContext ? "yes" : "no",
+        keep: true
       };
     });
 
@@ -3306,13 +3327,25 @@ function openAssignmentGroup(group) {
     records.forEach(function(record) {
       var item = document.createElement("div");
       item.className = "assignment-measure " + escapeHtml(record.assignment_status);
+      if (record.keep === false) {
+        item.classList.add("unkept");
+      }
       item.innerHTML =
         '<div class="assignment-measure-head">' +
+          '<input type="checkbox" class="assignment-keep-checkbox"' + (record.keep !== false ? ' checked' : '') + '>' +
           '<span class="measure-id">' + escapeHtml(record.measure_id) + '</span>' +
           '<span class="measure-name">' + escapeHtml(record.measure_name) + '</span>' +
           '<span class="assignment-status-badge ' + escapeHtml(record.assignment_status) + '">' + escapeHtml(record.assignment_status) + '</span>' +
         '</div>' +
         '';
+
+      var checkbox = item.querySelector(".assignment-keep-checkbox");
+      checkbox.addEventListener("click", function(event) {
+        event.stopPropagation();
+        record.keep = checkbox.checked;
+        item.classList.toggle("unkept", !checkbox.checked);
+      });
+
       listPanel.appendChild(item);
     });
   }
@@ -3344,10 +3377,17 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
   });
 
   if (pendingRecords.length === 0) {
+    var nextGroupForCompleted = findNextGroupInOrderAfter(group);
+
     panel.innerHTML =
       '<div class="tool-card">' +
         '<div class="assignment-title">Group complete</div>' +
-        '<div class="tool-hint">All selected measures in this group are already assigned. The workflow has moved to the next pending group where available.</div>' +
+        '<div class="tool-hint">All selected measures in this group are already assigned.</div>' +
+        '<div class="context-actions">' +
+          '<button class="confirm-button" onclick="goToGroup(\'' + escapeHtml(nextGroupForCompleted || "") + '\')"' + (nextGroupForCompleted ? '' : ' disabled') + '>' +
+            (nextGroupForCompleted ? "Next measure group" : "No more groups") +
+          '</button>' +
+        '</div>' +
       '</div>';
     return;
   }
@@ -3366,42 +3406,125 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
     '</div>';
 }
 
+function goToGroup(group) {
+  if (!group) { return; }
+  activeAssignmentGroup = group;
+  renderAssignmentDashboard();
+}
+
+function findNextGroupInOrderAfter(group) {
+  var groups = getAssignmentGroupsInOrder();
+  var startIndex = groups.indexOf(group);
+  if (startIndex === -1 || groups.length <= 1) { return null; }
+
+  var nextIndex = startIndex + 1;
+  return nextIndex < groups.length ? groups[nextIndex] : null;
+}
+
 async function confirmActiveGroupAssignment() {
   var group = activeAssignmentGroup;
   if (!group) { return; }
 
-  var recordsToUpdate = assignmentRecords.filter(function(record) {
-    return record.assignment_group === group && record.assignment_status !== CONFIG.ASSIGNMENT_STATUS_ASSIGNED;
+  var groupRecords = assignmentRecords.filter(function(record) {
+    return record.assignment_group === group;
   });
 
-  var sample = recordsToUpdate.length > 0 ? recordsToUpdate[0] : null;
+  var recordsToRemove = groupRecords.filter(function(record) {
+    return record.keep === false;
+  });
+
+  var recordsToUpdate = groupRecords.filter(function(record) {
+    return record.keep !== false && record.assignment_status !== CONFIG.ASSIGNMENT_STATUS_ASSIGNED;
+  });
+
+  var sample = recordsToUpdate.length > 0 ? recordsToUpdate[0] : (groupRecords[0] || null);
   var targetFeatureId = "";
   var assignedLayer = sample && sample.assignment_target ? sample.assignment_target : group;
 
-  if (recordsToUpdate.length === 0) {
+  if (recordsToUpdate.length === 0 && recordsToRemove.length === 0) {
     setStatus("There are no pending measures in " + group + ".", "");
     return;
   }
 
   try {
-    await updateSelectedMeasureAssignmentRows(recordsToUpdate, targetFeatureId, assignedLayer);
-    await updateReachAssessmentStatusForCurrentState(getReachIdFromUrl(), group);
-    setStatus("Assigned " + recordsToUpdate.length + " measure(s) in " + group + ". Reach assessment progress was updated.", "success");
+    if (recordsToRemove.length > 0) {
+      await deleteSelectedMeasureRows(recordsToRemove);
 
-    var nextPendingGroup = findNextPendingAssignmentGroup();
-    if (nextPendingGroup) {
-      activeAssignmentGroup = nextPendingGroup;
-      renderAssignmentDashboard();
-    } else {
-      activeAssignmentGroup = group;
-      await safeUpdateAssignmentSessionCompleted(getReachIdFromUrl());
-      renderAssignmentDashboard();
+      recordsToRemove.forEach(function(record) {
+        var index = assignmentRecords.indexOf(record);
+        if (index !== -1) { assignmentRecords.splice(index, 1); }
+      });
     }
+
+    if (recordsToUpdate.length > 0) {
+      await updateSelectedMeasureAssignmentRows(recordsToUpdate, targetFeatureId, assignedLayer);
+    }
+
+    await updateReachAssessmentStatusForCurrentState(getReachIdFromUrl(), group);
+
+    var statusMessage = "";
+    if (recordsToUpdate.length > 0) {
+      statusMessage += "Assigned " + recordsToUpdate.length + " measure(s) in " + group + ". ";
+    }
+    if (recordsToRemove.length > 0) {
+      statusMessage += "Removed " + recordsToRemove.length + " unticked measure(s) from " + group + ". ";
+    }
+    statusMessage += "Reach assessment progress was updated.";
+    setStatus(statusMessage, "success");
+
+    goToNextGroupAfterConfirm(group);
 
   } catch (error) {
     console.error(error);
     setStatus("Could not confirm assignment group: " + error.message, "error");
   }
+}
+
+function goToNextGroupAfterConfirm(group) {
+  var nextPendingGroup = findNextPendingAssignmentGroup();
+  if (nextPendingGroup) {
+    activeAssignmentGroup = nextPendingGroup;
+    renderAssignmentDashboard();
+  } else {
+    activeAssignmentGroup = group;
+    safeUpdateAssignmentSessionCompleted(getReachIdFromUrl());
+    renderAssignmentDashboard();
+  }
+}
+
+async function deleteSelectedMeasureRows(records) {
+  var objectIds = records
+    .map(function(record) { return record.objectId; })
+    .filter(function(objectId) { return objectId !== null && objectId !== undefined; });
+
+  if (objectIds.length === 0) { return null; }
+
+  var url = CONFIG.SELECTED_MEASURES_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
+
+  var formData = new FormData();
+  formData.append("f", "json");
+  formData.append("objectIds", objectIds.join(","));
+
+  if (CONFIG.SELECTED_MEASURES_TOKEN) {
+    formData.append("token", CONFIG.SELECTED_MEASURES_TOKEN);
+  }
+
+  var response = await fetch(url, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error("HTTP error while removing unticked measures: " + response.status);
+  }
+
+  var result = await response.json();
+
+  if (result.error) {
+    throw new Error(result.error.message || "ArcGIS deleteFeatures error while removing unticked measures.");
+  }
+
+  return result;
 }
 
 function findNextPendingAssignmentGroup() {
@@ -3435,10 +3558,7 @@ function getAssignmentGroupOrder(group) {
   var order = [
     "Reach Measures",
     "Reach Impoundment Measures",
-    "Dam Measures",
-    "Fish Dam Measures",
-    "Flow Dam Measures",
-    "Hydropeaking Measures",
+    "Dam and Barrier Measures",
     "Dike Measures",
     "Sidearm Measures",
     "Groyne Measures",
