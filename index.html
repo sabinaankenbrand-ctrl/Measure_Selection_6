@@ -23,7 +23,6 @@ html, body {
 </div>
 
 <button class="edit-answers-button hidden" id="edit-context-button" onclick="reopenContextPanel()">
-<button class="edit-answers-button hidden" id="edit-context-button" onclick="reopenContextPanel()">
 /* ==================================================================
    PAGE SHELL (body, header)
    ================================================================== */
@@ -3787,6 +3786,7 @@ function reopenContextPanel() {
   document.getElementById("context-panel").classList.remove("hidden");
   document.getElementById("edit-context-button").classList.add("hidden");
 }
+ 
 function getRadioValue(name) {
   var checked = document.querySelector("input[name='" + name + "']:checked");
   return checked ? checked.value : null;
