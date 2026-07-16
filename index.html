@@ -15,7 +15,15 @@ html, body {
   height: 100%;
   overflow: hidden;
 }
- 
+
+<div class="context-actions">
+    <button class="secondary-button" id="context-continue-button" onclick="continueAfterContextQuestions()">Continue</button>
+    <span class="context-note">Answer both questions to filter the suggested measures.</span>
+  </div>
+</div>
+
+<button class="edit-answers-button hidden" id="edit-context-button" onclick="reopenContextPanel()">
+<button class="edit-answers-button hidden" id="edit-context-button" onclick="reopenContextPanel()">
 /* ==================================================================
    PAGE SHELL (body, header)
    ================================================================== */
@@ -243,11 +251,11 @@ header h1 {
   background: #f8fbfd;
   border: 1px solid #d0dce8;
   border-radius: 8px;
-  margin: 6px 14px;
+  margin: 6px 14px 16px 14px;
   padding: 8px 12px;
   flex-shrink: 0;
 }
-
+ 
 .context-title {
   font-size: 0.75rem;
   font-weight: 700;
@@ -3729,6 +3737,8 @@ async function continueAfterContextQuestions() {
     return;
   }
 
+  hideContextPanel();
+
   currentReachIsImpounded = impoundedValue === "yes";
   currentReachHasBarrierContext = barrierValue === "yes";
 
@@ -3768,6 +3778,15 @@ async function continueAfterContextQuestions() {
   );
 }
 
+function hideContextPanel() {
+  document.getElementById("context-panel").classList.add("hidden");
+  document.getElementById("edit-context-button").classList.remove("hidden");
+}
+
+function reopenContextPanel() {
+  document.getElementById("context-panel").classList.remove("hidden");
+  document.getElementById("edit-context-button").classList.add("hidden");
+}
 function getRadioValue(name) {
   var checked = document.querySelector("input[name='" + name + "']:checked");
   return checked ? checked.value : null;
