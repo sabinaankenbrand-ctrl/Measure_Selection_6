@@ -481,6 +481,11 @@ header h1 {
   background: #f8fbfd;
 }
 
+.tool-card .confirm-button {
+  width: auto;
+  padding: 8px 16px;
+}
+
 .tool-card label {
   display: block;
   font-size: 0.72rem;
@@ -3226,6 +3231,7 @@ function goBackToRefinement() {
   dashboard.classList.add("hidden");
   contextPanel.classList.remove("hidden");
   refinementLayout.classList.remove("hidden");
+  document.getElementById("edit-context-button").classList.add("hidden");
 
   activeAssignmentGroup = null;
   safeUpdateAssignmentSessionRefinement(getReachIdFromUrl());
@@ -3245,6 +3251,7 @@ function goBackToRefinement() {
 function showAssignmentDashboard() {
   document.getElementById("context-panel").classList.add("hidden");
   document.getElementById("refinement-layout").classList.add("hidden");
+  document.getElementById("edit-context-button").classList.add("hidden");
   document.getElementById("assignment-dashboard").classList.remove("hidden");
 
   activeAssignmentGroup = findNextPendingAssignmentGroup() || findFirstAssignmentGroup();
