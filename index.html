@@ -663,7 +663,7 @@ header h1 {
   <div class="assignment-dashboard-header">
     <div class="assignment-dashboard-title">Assignment workflow</div>
     <div class="assignment-dashboard-header-actions">
-      <button class="back-button" type="button" id="view-summary-button" onclick="showSummaryPanel()" disabled>View Summary</button>
+      <button class="back-button hidden" type="button" id="back-to-workflow-button" onclick="hideSummaryPanel()">Back to assignment workflow</button>
       <button class="back-button" type="button" onclick="goBackToRefinement()">Back to selected measures</button>
     </div>
   </div>
@@ -3421,7 +3421,6 @@ function showAssignmentDashboard() {
 function renderAssignmentDashboard() {
   renderAssignmentTabs();
   openAssignmentGroup(activeAssignmentGroup);
-  updateSummaryButtonState();
 }
 
 function renderAssignmentTabs() {
@@ -3546,15 +3545,23 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
 
   if (pendingRecords.length === 0) {
     var nextGroupForCompleted = findNextGroupInOrderAfter(group);
+    var isEverythingComplete = !nextGroupForCompleted && allAssignmentGroupsComplete();
+
+    var actionButtonHtml;
+    if (nextGroupForCompleted) {
+      actionButtonHtml = '<button class="confirm-button" onclick="goToGroup(\'' + escapeHtml(nextGroupForCompleted) + '\')">Next measure group</button>';
+    } else if (isEverythingComplete) {
+      actionButtonHtml = '<button class="confirm-button" onclick="showSummaryPanel()">View Summary</button>';
+    } else {
+      actionButtonHtml = '<button class="confirm-button" disabled>No more groups</button>';
+    }
 
     panel.innerHTML =
       '<div class="tool-card">' +
         '<div class="assignment-title">Group complete</div>' +
         '<div class="tool-hint">All selected measures in this group are already assigned.</div>' +
         '<div class="context-actions">' +
-          '<button class="confirm-button" onclick="goToGroup(\'' + escapeHtml(nextGroupForCompleted || "") + '\')"' + (nextGroupForCompleted ? '' : ' disabled') + '>' +
-            (nextGroupForCompleted ? "Next measure group" : "No more groups") +
-          '</button>' +
+          actionButtonHtml +
         '</div>' +
       '</div>';
     return;
@@ -3767,7 +3774,9 @@ var GEOMETRY_LAYERS = {
 
 async function getDrawnGeometryCountForGroup(group, reachId) {
   var layerInfo = GEOMETRY_LAYERS[group];
-  if (!layerInfo || !isUrlConfigured(layerInfo.url)) { return null; }
+  if (!layerInfo || !isUrlConfigured(layerInfo.url)) {
+    return { status: "not_configured", count: null, errorMessage: null };
+  }
 
   try {
     var url = layerInfo.url.replace(/\/$/, "") + "/query";
@@ -3783,19 +3792,25 @@ async function getDrawnGeometryCountForGroup(group, reachId) {
     }
 
     var response = await fetch(url, { method: "POST", body: formData });
-    if (!response.ok) { return null; }
+    if (!response.ok) {
+      return { status: "error", count: null, errorMessage: "HTTP error " + response.status };
+    }
 
     var result = await response.json();
     if (result.error) {
       console.warn("Could not count drawn geometries for " + group + ":", result.error);
-      return null;
+      return { status: "error", count: null, errorMessage: result.error.message || "ArcGIS query error" };
     }
 
-    return typeof result.count === "number" ? result.count : null;
+    if (typeof result.count !== "number") {
+      return { status: "error", count: null, errorMessage: "Unexpected response from layer (no count returned)" };
+    }
+
+    return { status: "ok", count: result.count, errorMessage: null };
 
   } catch (error) {
     console.warn("Could not count drawn geometries for " + group + ".", error);
-    return null;
+    return { status: "error", count: null, errorMessage: error.message || "Network error" };
   }
 }
 
@@ -3813,11 +3828,7 @@ function allAssignmentGroupsComplete() {
   return findNextPendingAssignmentGroup() === null;
 }
 
-function updateSummaryButtonState() {
-  var button = document.getElementById("view-summary-button");
-  if (!button) { return; }
-  button.disabled = !allAssignmentGroupsComplete();
-}
+
 
 async function showSummaryPanel() {
   if (!allAssignmentGroupsComplete()) { return; }
@@ -3825,6 +3836,7 @@ async function showSummaryPanel() {
   document.getElementById("assignment-tabs").classList.add("hidden");
   document.getElementById("assignment-body").classList.add("hidden");
   document.getElementById("summary-panel").classList.remove("hidden");
+  document.getElementById("back-to-workflow-button").classList.remove("hidden");
 
   var panel = document.getElementById("summary-panel");
   panel.innerHTML = '<div class="empty-state">Loading summary...</div>';
@@ -3834,8 +3846,8 @@ async function showSummaryPanel() {
 
   var rows = await Promise.all(groups.map(async function(group) {
     var summary = getAssignmentGroupSummary(group);
-    var drawnCount = await getDrawnGeometryCountForGroup(group, reachId);
-    return { group: group, summary: summary, drawnCount: drawnCount };
+    var drawnResult = await getDrawnGeometryCountForGroup(group, reachId);
+    return { group: group, summary: summary, drawnResult: drawnResult };
   }));
 
   panel.innerHTML =
@@ -3849,10 +3861,12 @@ async function showSummaryPanel() {
     var el = document.createElement("div");
     el.className = "summary-group";
 
-    var countsText = '<strong>' + row.summary.total + '</strong> measure(s) selected, <strong>' + row.summary.assigned + '</strong> assigned';
+    var countsText = '<strong>' + row.summary.assigned + '</strong> measure(s) assigned';
 
-    if (row.drawnCount !== null) {
-      countsText += '<br><strong>' + row.drawnCount + '</strong> geometry/geometries drawn for this reach';
+    if (row.drawnResult.status === "ok") {
+      countsText += '<br><strong>' + row.drawnResult.count + '</strong> geometry/geometries drawn for this reach';
+    } else if (row.drawnResult.status === "error") {
+      countsText += '<br><span style="color:#c0392b;">Could not check drawn geometries (' + escapeHtml(row.drawnResult.errorMessage) + ')</span>';
     }
 
     el.innerHTML =
@@ -3867,6 +3881,7 @@ function hideSummaryPanel() {
   document.getElementById("summary-panel").classList.add("hidden");
   document.getElementById("assignment-tabs").classList.remove("hidden");
   document.getElementById("assignment-body").classList.remove("hidden");
+  document.getElementById("back-to-workflow-button").classList.add("hidden");
 }
 
 /* ------------------------------------------------------------------
