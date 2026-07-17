@@ -2554,8 +2554,16 @@ async function setActiveWorkflowReach(reachId) {
 
 async function queryActiveWorkflowReachObjectIdsForSession(sessionId) {
   var url = CONFIG.REACH_PROBLEM_LAYER_URL.replace(/\/$/, "") + "/query";
-  var where = CONFIG.FIELD_ACTIVE_WORKFLOW + " = " + CONFIG.ACTIVE_WORKFLOW_ON_VALUE +
-    " AND " + CONFIG.FIELD_ACTIVE_SESSION_ID + " = '" + escapeSqlLiteral(sessionId) + "'";
+  // Intentionally NOT filtering by session_id here. sessionStorage does not
+  // persist reliably inside the sandboxed Embed widget iframe used by
+  // Experience Builder, so a fresh session_id can be generated on nearly
+  // every load - matching only "this session's" previous row would then
+  // never find the actual previously active reach, leaving it stuck on
+  // active_workflow = 1 forever. Since the tool now treats "active" as a
+  // single global slot (most-recently-activated reach, see the Sidearm
+  // Arcade matching logic), we simply deactivate whatever is currently
+  // marked active, regardless of which session set it.
+  var where = CONFIG.FIELD_ACTIVE_WORKFLOW + " = " + CONFIG.ACTIVE_WORKFLOW_ON_VALUE;
 
   var formData = new FormData();
   formData.append("f", "json");
@@ -3127,8 +3135,14 @@ async function safeUpsertAssignmentSession(attributes) {
 }
 
 async function upsertAssignmentSession(attributes) {
-  var sessionId = attributes[CONFIG.FIELD_SESSION_ID] || getSessionId();
-  var objectIds = await queryAssignmentSessionObjectIds(sessionId);
+  // Keyed by country, not session_id: session_id can change unexpectedly
+  // between calls (sessionStorage does not persist reliably inside the
+  // sandboxed Embed widget iframe), so using it as the lookup key would
+  // create a new row every time instead of updating the existing one.
+  // Country is stable for the whole time a given country's tool is open,
+  // and naturally keeps CZ and SK from overwriting each other's row in
+  // this shared table.
+  var objectIds = await queryAssignmentSessionObjectIdsForCountry(activeCountryCode);
 
   if (objectIds.length > 0) {
     var info = await getAssignmentSessionTableInfo();
@@ -3140,9 +3154,9 @@ async function upsertAssignmentSession(attributes) {
   return addAssignmentSessionRow(attributes);
 }
 
-async function queryAssignmentSessionObjectIds(sessionId) {
+async function queryAssignmentSessionObjectIdsForCountry(countryCode) {
   var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/query";
-  var where = CONFIG.FIELD_SESSION_ID + " = '" + escapeSqlLiteral(sessionId) + "'";
+  var where = CONFIG.FIELD_SESSION_COUNTRY + " = '" + escapeSqlLiteral(countryCode) + "'";
 
   var formData = new FormData();
   formData.append("f", "json");
@@ -4240,15 +4254,12 @@ function escapeSqlLiteral(value) {
 window.addEventListener("pagehide", function() {
   if (!isAssignmentSessionConfigured()) { return; }
 
-  // Single request only - deleteFeatures supports a "where" clause directly,
-  // so we don't need to query for objectIds first. A query-then-delete
-  // two-step here is unreliable: the browser can kill the first in-flight
-  // fetch before it resolves when the tab is actually closing, so the
-  // delete would never fire at all.
+  // Keyed by country here too, consistent with upsertAssignmentSession -
+  // session_id is not reliable across reloads in this embedded context.
   var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
   var formData = new FormData();
   formData.append("f", "json");
-  formData.append("where", CONFIG.FIELD_SESSION_ID + " = '" + escapeSqlLiteral(getSessionId()) + "'");
+  formData.append("where", CONFIG.FIELD_SESSION_COUNTRY + " = '" + escapeSqlLiteral(activeCountryCode) + "'");
   if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
     formData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
   }
