@@ -243,7 +243,7 @@ header h1 {
   background: #f8fbfd;
   border: 1px solid #d0dce8;
   border-radius: 8px;
-  margin: 8px 14px 10px 14px;
+  margin: 8px 14px 18px 14px;
   padding: 10px 14px;
   flex-shrink: 0;
 }
@@ -1208,8 +1208,8 @@ async function initialise() {
     setStatus("Loading problems for reach " + reachId + "...", "");
 
     reachProblemAttributes = await queryReachProblemAttributes(reachId);
-    currentReachIsImpounded = getReachImpoundmentStatus(reachProblemAttributes);
-    currentReachHasBarrierContext = getReachBarrierContextStatus(reachProblemAttributes);
+    currentReachIsImpounded = getContextAnswer("impounded", reachProblemAttributes);
+    currentReachHasBarrierContext = getContextAnswer("barrier", reachProblemAttributes);
 
     activeProblemIds = getActiveProblemIdsFromAttributes(reachProblemAttributes);
     activeProblemDetails = getProblemDetails(activeProblemIds);
@@ -3170,41 +3170,66 @@ function isBarrierOnlyRule(rule) {
   return false;
 }
 
-function getReachBarrierContextStatus(attributes) {
-  // Priority:
-  // 1. URL parameter override, e.g. ?has_barrier=yes
-  // 2. Saved answer in the reach/problem layer field filter_barrier_answer
-  // 3. Unknown/null, so the user has to answer the question
-  var fromUrl = getBarrierContextFromUrl();
-  if (fromUrl !== null) { return fromUrl; }
+/* ------------------------------------------------------------------
+   CONTEXT FILTER ANSWERS (impounded / barrier)
 
-  if (attributes && CONFIG.FIELD_FILTER_BARRIER_ANSWER) {
-    var savedValue = getAttributeCaseInsensitive(attributes, CONFIG.FIELD_FILTER_BARRIER_ANSWER);
-    var parsedSavedValue = parseYesNoContextValue(savedValue);
-    if (parsedSavedValue !== null) { return parsedSavedValue; }
+   Both questions use the same yes/no logic and the same priority
+   order for where the answer comes from:
+     1. URL parameter override (e.g. ?is_impounded=yes)
+     2. Previously saved answer on the reach layer
+     3. null = unanswered, user must click Yes/No
+
+   The "impounded" question intentionally has no extra fallback field
+   (e.g. from a problem-matrix column) - if a reach has never been
+   answered, the user simply answers it once. This keeps the reach
+   layer schema minimal: only filter_impounded_answer and
+   filter_barrier_answer are required per country.
+------------------------------------------------------------------ */
+
+var CONTEXT_QUESTIONS = {
+  impounded: {
+    urlParams: ["is_impounded", "impounded", "Impounded", "IMPOUNDED"],
+    savedField: CONFIG.FIELD_FILTER_IMPOUNDED_ANSWER
+  },
+  barrier: {
+    urlParams: ["has_barrier", "barrier", "Barrier", "HAS_BARRIER"],
+    savedField: CONFIG.FIELD_FILTER_BARRIER_ANSWER
   }
+};
 
-  return null;
-}
-
-function getBarrierContextFromUrl() {
-  var params = new URLSearchParams(window.location.search);
-  var value =
-    params.get("has_barrier") ||
-    params.get("barrier") ||
-    params.get("Barrier") ||
-    params.get("HAS_BARRIER");
-
-  return parseYesNoContextValue(value);
-}
-
-function parseYesNoContextValue(value) {
+function parseYesNoValue(value) {
   if (value === null || value === undefined || value === "") { return null; }
 
   var text = String(value).replace(/\u00a0/g, " ").trim().toLowerCase();
 
   if (["1", "yes", "y", "true", "barrier", "impounded"].indexOf(text) !== -1) { return true; }
   if (["0", "no", "n", "false", "none", "no_barrier", "not_impounded", "not impounded", "free_flowing", "free-flowing"].indexOf(text) !== -1) { return false; }
+
+  return null;
+}
+
+function getYesNoFromUrl(paramNames) {
+  var params = new URLSearchParams(window.location.search);
+
+  for (var i = 0; i < paramNames.length; i++) {
+    var value = params.get(paramNames[i]);
+    if (value !== null && value !== "") { return parseYesNoValue(value); }
+  }
+
+  return null;
+}
+
+// questionKey is "impounded" or "barrier".
+function getContextAnswer(questionKey, attributes) {
+  var question = CONTEXT_QUESTIONS[questionKey];
+
+  var fromUrl = getYesNoFromUrl(question.urlParams);
+  if (fromUrl !== null) { return fromUrl; }
+
+  if (attributes && question.savedField) {
+    var saved = parseYesNoValue(getAttributeCaseInsensitive(attributes, question.savedField));
+    if (saved !== null) { return saved; }
+  }
 
   return null;
 }
@@ -3735,83 +3760,8 @@ function isAutoAssignRule(rule) {
   return autoValue === 1 || autoValue === "1" || autoValue === true || mode === "automatic";
 }
 
-function filterMeasureIdsByImpoundmentRule(measureIds, isImpounded) {
-  if (!CONFIG.USE_IMPOUNDMENT_FILTER) { return measureIds; }
-
-  // If impoundment status is unknown, keep all measures rather than hiding possibly relevant options.
-  if (isImpounded === null || isImpounded === undefined) { return measureIds; }
-
-  return measureIds.filter(function(id) {
-    var rule = getAssignmentRuleForMeasure(id);
-
-    if (!rule) { return true; }
-
-    if (isImpoundmentOnlyRule(rule) && isImpounded === false) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
 function isImpoundmentOnlyRule(rule) {
   return cleanRuleValue(rule.impoundment).toLowerCase() === "yes";
-}
-
-function getReachImpoundmentStatus(attributes) {
-  // Priority:
-  // 1. URL parameter override, e.g. ?is_impounded=yes
-  // 2. Saved answer in the reach/problem layer field filter_impounded_answer
-  // 3. Optional reach attribute is_impounded
-  // 4. Unknown/null, so the user has to answer the question
-  var fromUrl = getImpoundmentStatusFromUrl();
-
-  if (fromUrl !== null) { return fromUrl; }
-
-  if (attributes && CONFIG.FIELD_FILTER_IMPOUNDED_ANSWER) {
-    var savedValue = getAttributeCaseInsensitive(attributes, CONFIG.FIELD_FILTER_IMPOUNDED_ANSWER);
-    var parsedSavedValue = parseImpoundmentValue(savedValue);
-    if (parsedSavedValue !== null) { return parsedSavedValue; }
-  }
-
-  if (!attributes || !CONFIG.FIELD_REACH_IS_IMPOUNDED) { return null; }
-
-  var impoundedAttributeValue = getAttributeCaseInsensitive(attributes, CONFIG.FIELD_REACH_IS_IMPOUNDED);
-
-  if (impoundedAttributeValue === undefined) {
-    return null;
-  }
-
-  return parseImpoundmentValue(impoundedAttributeValue);
-}
-
-function getImpoundmentStatusFromUrl() {
-  var params = new URLSearchParams(window.location.search);
-  var value =
-    params.get("is_impounded") ||
-    params.get("impounded") ||
-    params.get("Impounded") ||
-    params.get("IMPOUNDED");
-
-  if (value === null || value === undefined || value === "") { return null; }
-
-  return parseImpoundmentValue(value);
-}
-
-function parseImpoundmentValue(value) {
-  if (value === null || value === undefined) { return null; }
-
-  var text = String(value).trim().toLowerCase();
-
-  if (["1", "yes", "y", "true", "impounded"].indexOf(text) !== -1) {
-    return true;
-  }
-
-  if (["0", "no", "n", "false", "not_impounded", "not impounded", "free_flowing", "free-flowing"].indexOf(text) !== -1) {
-    return false;
-  }
-
-  return null;
 }
 
 function getBarrierDisplayText() {
