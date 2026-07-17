@@ -3548,7 +3548,7 @@ function openAssignmentGroup(group) {
       var isPending = record.assignment_status === CONFIG.ASSIGNMENT_STATUS_PENDING || record.assignment_status === CONFIG.ASSIGNMENT_STATUS_UNCLASSIFIED;
       var instructionHtml = "";
 
-      if (isPending) {
+      if (isPending && GROUPS_WITH_INLINE_EDIT_INSTRUCTION.indexOf(group) !== -1) {
         var toolLabel = getEditToolLabelForAssignmentGroup(group, record);
         instructionHtml = '<div class="assignment-measure-instruction">Please use the ' + escapeHtml(toolLabel) + ' to assign this measure on the map.</div>';
       }
@@ -3821,6 +3821,18 @@ var GEOMETRY_LAYERS = {
     reachIdField: "D4A_ID"
   }
 };
+
+// Only these groups currently show the inline "Please use the X edit
+// tool..." instruction next to each pending measure. Dam and Barrier
+// Measures is intentionally excluded - it's handled by automatic
+// barrier-point matching at confirm time (autoAssignDamMeasuresToBarrierLayer),
+// not by a manual drawing instruction. Add a group here once its
+// drawing workflow + reach linking is set up and tested.
+var GROUPS_WITH_INLINE_EDIT_INSTRUCTION = [
+  "Dike Measures",
+  "Groyne Measures",
+  "Sidearm Measures"
+];
 
 async function getDrawnGeometryCountForGroup(group, reachId) {
   var layerInfo = GEOMETRY_LAYERS[group];
