@@ -474,6 +474,17 @@ header h1 {
 .assignment-status-badge.pending { background: #fee2e2; color: #991b1b; }
 .assignment-status-badge.unclassified { background: #e5e7eb; color: #374151; }
 
+.assignment-measure-instruction {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  color: #9a3412;
+  line-height: 1.4;
+}
+
 .tool-card {
   border: 1px solid #d0dce8;
   border-radius: 8px;
@@ -663,7 +674,6 @@ header h1 {
   <div class="assignment-dashboard-header">
     <div class="assignment-dashboard-title">Assignment workflow</div>
     <div class="assignment-dashboard-header-actions">
-      <button class="back-button hidden" type="button" id="back-to-workflow-button" onclick="hideSummaryPanel()">Back to assignment workflow</button>
       <button class="back-button" type="button" onclick="goBackToRefinement()">Back to selected measures</button>
     </div>
   </div>
@@ -2627,17 +2637,40 @@ function getAssignmentCountsForCurrentState() {
   };
 }
 
+/* ------------------------------------------------------------------
+   ASSESSED-BY
+
+   Priority:
+     1. URL parameter, if explicitly set (e.g. ?assessed_by=sabina)
+     2. Previously entered value for this browser tab (sessionStorage)
+     3. One-time prompt asking the user for their name
+
+   Used for FIELD_ASSESSED_BY on confirm (who assessed this reach).
+   This does NOT verify identity - it's a simple, self-reported label.
+------------------------------------------------------------------ */
+
 function getAssessedByFromUrl() {
   var params = new URLSearchParams(window.location.search);
-  var value =
+  var fromUrl =
     params.get("assessed_by") ||
     params.get("user") ||
     params.get("username") ||
     params.get("assessor");
 
-  if (!value) { return ""; }
+  if (fromUrl) { return cleanSessionValue(fromUrl); }
 
-  return String(value).replace(/\u00a0/g, " ").trim();
+  var storageKey = "d4a_assessed_by";
+  var stored = sessionStorage.getItem(storageKey);
+  if (stored) { return stored; }
+
+  var typed = window.prompt("Please enter your name (used to track who assessed this reach):");
+  var cleaned = cleanSessionValue(typed);
+
+  if (cleaned) {
+    sessionStorage.setItem(storageKey, cleaned);
+  }
+
+  return cleaned;
 }
 
 function buildGenericUpdateFeaturesErrorMessage(result, prefix) {
@@ -3497,6 +3530,15 @@ function openAssignmentGroup(group) {
       if (record.keep === false) {
         item.classList.add("unkept");
       }
+
+      var isPending = record.assignment_status === CONFIG.ASSIGNMENT_STATUS_PENDING || record.assignment_status === CONFIG.ASSIGNMENT_STATUS_UNCLASSIFIED;
+      var instructionHtml = "";
+
+      if (isPending) {
+        var toolLabel = getEditToolLabelForAssignmentGroup(group, record);
+        instructionHtml = '<div class="assignment-measure-instruction">Please use the ' + escapeHtml(toolLabel) + ' to assign this measure on the map.</div>';
+      }
+
       item.innerHTML =
         '<div class="assignment-measure-head">' +
           '<input type="checkbox" class="assignment-keep-checkbox"' + (record.keep !== false ? ' checked' : '') + '>' +
@@ -3504,7 +3546,7 @@ function openAssignmentGroup(group) {
           '<span class="measure-name">' + escapeHtml(record.measure_name) + '</span>' +
           '<span class="assignment-status-badge ' + escapeHtml(record.assignment_status) + '">' + escapeHtml(record.assignment_status) + '</span>' +
         '</div>' +
-        '';
+        instructionHtml;
 
       var checkbox = item.querySelector(".assignment-keep-checkbox");
       checkbox.addEventListener("click", function(event) {
@@ -3531,11 +3573,6 @@ function getEditToolLabelForAssignmentGroup(group, sample) {
   }
 
   return group + " edit tool";
-}
-
-function getAssignmentInstructionText(group, sample) {
-  var toolLabel = getEditToolLabelForAssignmentGroup(group, sample);
-  return "Please use the " + toolLabel + " to assign the measures on the map and then click the button below to confirm.";
 }
 
 function renderAssignmentToolPanel(group, records, summary, panel) {
@@ -3567,13 +3604,12 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
     return;
   }
 
-  var sample = pendingRecords[0];
   var nextGroup = findNextPendingAssignmentGroupAfter(group);
 
   panel.innerHTML =
     '<div class="tool-card">' +
-      '<div class="assignment-title">Assign pending ' + escapeHtml(group) + '</div>' +
-      '<div class="tool-hint"><strong>' + escapeHtml(getAssignmentInstructionText(group, sample)) + '</strong></div>' +
+      '<div class="assignment-title">' + escapeHtml(group) + '</div>' +
+      '<div class="tool-hint">Once all measures above have been assigned on the map, confirm below.</div>' +
       '<div class="context-actions">' +
         '<button class="confirm-button" onclick="confirmActiveGroupAssignment()">Confirm this group assignment</button>' +
       '</div>' +
@@ -3836,7 +3872,6 @@ async function showSummaryPanel() {
   document.getElementById("assignment-tabs").classList.add("hidden");
   document.getElementById("assignment-body").classList.add("hidden");
   document.getElementById("summary-panel").classList.remove("hidden");
-  document.getElementById("back-to-workflow-button").classList.remove("hidden");
 
   var panel = document.getElementById("summary-panel");
   panel.innerHTML = '<div class="empty-state">Loading summary...</div>';
@@ -3881,7 +3916,6 @@ function hideSummaryPanel() {
   document.getElementById("summary-panel").classList.add("hidden");
   document.getElementById("assignment-tabs").classList.remove("hidden");
   document.getElementById("assignment-body").classList.remove("hidden");
-  document.getElementById("back-to-workflow-button").classList.add("hidden");
 }
 
 /* ------------------------------------------------------------------
@@ -4206,19 +4240,20 @@ function escapeSqlLiteral(value) {
 window.addEventListener("pagehide", function() {
   if (!isAssignmentSessionConfigured()) { return; }
 
-  queryAssignmentSessionObjectIds(getSessionId()).then(function(objectIds) {
-    if (!objectIds || objectIds.length === 0) { return; }
+  // Single request only - deleteFeatures supports a "where" clause directly,
+  // so we don't need to query for objectIds first. A query-then-delete
+  // two-step here is unreliable: the browser can kill the first in-flight
+  // fetch before it resolves when the tab is actually closing, so the
+  // delete would never fire at all.
+  var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
+  var formData = new FormData();
+  formData.append("f", "json");
+  formData.append("where", CONFIG.FIELD_SESSION_ID + " = '" + escapeSqlLiteral(getSessionId()) + "'");
+  if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
+    formData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
+  }
 
-    var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
-    var formData = new FormData();
-    formData.append("f", "json");
-    formData.append("objectIds", objectIds.join(","));
-    if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
-      formData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
-    }
-
-    navigator.sendBeacon(url, formData);
-  }).catch(function() { /* best effort only */ });
+  navigator.sendBeacon(url, formData);
 });
 </script>
 
