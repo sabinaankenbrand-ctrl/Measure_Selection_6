@@ -659,10 +659,10 @@ var COUNTRY_CONFIGS = {
   },
   "SK": {
     // TODO: replace these 5 placeholders once the SK layers/tables exist in ArcGIS Online.
-    REACH_PROBLEM_LAYER_URL: "PASTE_SK_REACH_PROBLEM_LAYER_URL_HERE",
+    REACH_PROBLEM_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/SK_test/FeatureServer/0",
     SELECTED_MEASURES_TABLE_URL: "PASTE_SK_SELECTED_MEASURES_TABLE_URL_HERE",
     MEASURE_STATUS_LAYER_URL: "PASTE_SK_MEASURE_STATUS_LAYER_URL_HERE",
-    ASSIGNMENT_SESSION_TABLE_URL: "PASTE_SK_ASSIGNMENT_SESSION_TABLE_URL_HERE",
+    ASSIGNMENT_SESSION_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measure_Assignment_Session/FeatureServer/0",
     DAM_MEASURES_LAYER_URL: "PASTE_SK_DAM_MEASURES_LAYER_URL_HERE"
   }
 };
@@ -719,7 +719,6 @@ var CONFIG = {
   // even when the map selection changes while the user edits dikes/groynes/barriers.
   ASSIGNMENT_SESSION_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measure_Assignment_Session/FeatureServer/0",
   ASSIGNMENT_SESSION_TOKEN: "",
-  DEFAULT_SESSION_ID: "default",
   FIELD_SESSION_ID: "session_id",
   FIELD_SESSION_ACTIVE_REACH_ID: "active_reach_id",
   FIELD_SESSION_ACTIVE_ASSIGNMENT_GROUP: "active_assignment_group",
@@ -730,6 +729,10 @@ var CONFIG = {
   FIELD_SESSION_ACTIVE_EDIT_TOOL: "active_edit_tool",
   FIELD_SESSION_ACTIVE_MEASURE_IDS: "active_measure_ids",
   FIELD_SESSION_ACTIVE_MEASURE_COUNT: "active_measure_count",
+  // Only needed if ASSIGNMENT_SESSION_TABLE_URL is the SAME table for
+  // every country (shared table). Records which country a session row
+  // belongs to, since the table itself no longer implies the country.
+  FIELD_SESSION_COUNTRY: "country",
 
   // Dam/barrier point layer used for automatic assignment of selected
   // dam/barrier measures D4A_001-D4A_014, D4A_027-D4A_038 and D4A_052-D4A_057.
@@ -2869,15 +2872,30 @@ async function queryMeasureStatusObjectIdsForReach(reachId) {
    ASSIGNMENT SESSION TABLE
 ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------
+   SESSION ID
+
+   Priority:
+     1. URL parameter, if someone deliberately set one (e.g. for testing)
+     2. Auto-generated ID, stored per browser tab (sessionStorage), so
+        many concurrent users each get their own unique session
+        automatically, without anyone having to configure it manually
+        in the Embed widget.
+------------------------------------------------------------------ */
+
 function getSessionId() {
   var params = new URLSearchParams(window.location.search);
-  return cleanSessionValue(
-    params.get("session_id") ||
-    params.get("Session_ID") ||
-    params.get("SESSION_ID") ||
-    CONFIG.DEFAULT_SESSION_ID ||
-    "default"
-  );
+  var fromUrl = params.get("session_id") || params.get("Session_ID") || params.get("SESSION_ID");
+
+  if (fromUrl) { return cleanSessionValue(fromUrl); }
+
+  var storageKey = "d4a_session_id";
+  var stored = sessionStorage.getItem(storageKey);
+  if (stored) { return stored; }
+
+  var generated = "session_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+  sessionStorage.setItem(storageKey, generated);
+  return generated;
 }
 
 function cleanSessionValue(value) {
@@ -2946,6 +2964,7 @@ function buildBaseAssignmentSessionAttributes(reachId, workflowStatus) {
   attributes[CONFIG.FIELD_SESSION_ACTIVE_REACH_ID] = cleanSessionValue(reachId);
   attributes[CONFIG.FIELD_SESSION_WORKFLOW_STATUS] = workflowStatus;
   attributes[CONFIG.FIELD_SESSION_UPDATED_AT] = Date.now();
+  attributes[CONFIG.FIELD_SESSION_COUNTRY] = activeCountryCode;
   return attributes;
 }
 
