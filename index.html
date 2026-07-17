@@ -659,8 +659,8 @@ var COUNTRY_CONFIGS = {
   },
   "SK": {
     // TODO: replace these 5 placeholders once the SK layers/tables exist in ArcGIS Online.
-    REACH_PROBLEM_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/SK_test/FeatureServer/20",
-    SELECTED_MEASURES_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Reach_Selected_Measures_SA/FeatureServer/0",
+    REACH_PROBLEM_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/SK_test/FeatureServer/0",
+    SELECTED_MEASURES_TABLE_URL: "PASTE_SK_SELECTED_MEASURES_TABLE_URL_HERE",
     MEASURE_STATUS_LAYER_URL: "PASTE_SK_MEASURE_STATUS_LAYER_URL_HERE",
     ASSIGNMENT_SESSION_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measure_Assignment_Session/FeatureServer/0",
     DAM_MEASURES_LAYER_URL: "PASTE_SK_DAM_MEASURES_LAYER_URL_HERE"
@@ -733,6 +733,11 @@ var CONFIG = {
   // every country (shared table). Records which country a session row
   // belongs to, since the table itself no longer implies the country.
   FIELD_SESSION_COUNTRY: "country",
+  // A session row is considered stale (abandoned) if it hasn't been
+  // updated in this many minutes. Cleaned up opportunistically whenever
+  // anyone loads the tool - not a guaranteed real-time removal, but
+  // reliable regardless of how the old session actually ended.
+  SESSION_STALE_MINUTES: 30,
 
   // Dam/barrier point layer used for automatic assignment of selected
   // dam/barrier measures D4A_001-D4A_014, D4A_027-D4A_038 and D4A_052-D4A_057.
@@ -1186,6 +1191,7 @@ initialise();
 
 async function initialise() {
   showCurrentReach();
+  safeCleanupStaleAssignmentSessions();
 
   var reachId = getReachIdFromUrl();
 
@@ -2898,6 +2904,59 @@ function getSessionId() {
   return generated;
 }
 
+/* ------------------------------------------------------------------
+   STALE SESSION CLEANUP
+
+   Runs on every page load. Removes session rows that haven't been
+   updated in a while (default 30 min), regardless of how the
+   previous session ended (closed tab, crash, lost connection).
+   This is the reliable cleanup mechanism - see the pagehide listener
+   at the end of this file for a best-effort "immediate" cleanup on a
+   clean tab close.
+------------------------------------------------------------------ */
+
+async function safeCleanupStaleAssignmentSessions() {
+  try {
+    await cleanupStaleAssignmentSessions();
+  } catch (error) {
+    console.warn("Stale session cleanup failed.", error);
+  }
+}
+
+async function cleanupStaleAssignmentSessions() {
+  if (!isAssignmentSessionConfigured()) { return; }
+
+  var staleBefore = Date.now() - (CONFIG.SESSION_STALE_MINUTES * 60 * 1000);
+  var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/query";
+  var where = CONFIG.FIELD_SESSION_UPDATED_AT + " < " + staleBefore;
+
+  var formData = new FormData();
+  formData.append("f", "json");
+  formData.append("where", where);
+  formData.append("returnIdsOnly", "true");
+
+  if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
+    formData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
+  }
+
+  var response = await fetch(url, { method: "POST", body: formData });
+  if (!response.ok) { return; }
+
+  var result = await response.json();
+  if (result.error || !result.objectIds || result.objectIds.length === 0) { return; }
+
+  var deleteUrl = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
+  var deleteFormData = new FormData();
+  deleteFormData.append("f", "json");
+  deleteFormData.append("objectIds", result.objectIds.join(","));
+
+  if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
+    deleteFormData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
+  }
+
+  await fetch(deleteUrl, { method: "POST", body: deleteFormData });
+}
+
 function cleanSessionValue(value) {
   if (value === null || value === undefined) { return ""; }
   return String(value).replace(/\u00a0/g, " ").trim();
@@ -3934,6 +3993,34 @@ function normalizeMeasureId(value) {
 function escapeSqlLiteral(value) {
   return String(value).replaceAll("'", "''");
 }
+
+/* ------------------------------------------------------------------
+   BEST-EFFORT CLEANUP ON TAB CLOSE
+
+   Attempts to remove this session's own row immediately when the tab
+   is closed cleanly. Uses sendBeacon because normal fetch() requests
+   can be cancelled mid-flight when a page unloads - not guaranteed,
+   but works for the common "closed the tab normally" case. The stale
+   cleanup above is what guarantees eventual removal regardless.
+------------------------------------------------------------------ */
+
+window.addEventListener("pagehide", function() {
+  if (!isAssignmentSessionConfigured()) { return; }
+
+  queryAssignmentSessionObjectIds(getSessionId()).then(function(objectIds) {
+    if (!objectIds || objectIds.length === 0) { return; }
+
+    var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
+    var formData = new FormData();
+    formData.append("f", "json");
+    formData.append("objectIds", objectIds.join(","));
+    if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
+      formData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
+    }
+
+    navigator.sendBeacon(url, formData);
+  }).catch(function() { /* best effort only */ });
+});
 </script>
 
 </body>
