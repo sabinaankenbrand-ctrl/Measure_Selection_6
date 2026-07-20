@@ -4417,7 +4417,27 @@ function normalizeMeasureId(value) {
 function escapeSqlLiteral(value) {
   return String(value).replaceAll("'", "''");
 }
+/* ------------------------------------------------------------------
+   REACT TO REACH_ID CHANGES WITHOUT A FULL PAGE RELOAD
 
+   The Embed widget's iframe stays alive while Experience Builder just
+   updates the URL query string in the background (no reload). Since
+   initialise() only runs once on load, we poll for reach_id changes
+   and re-run initialise() whenever it changes, so the tool (and the
+   active_workflow highlight) stays in sync with the selected reach.
+------------------------------------------------------------------ */
+
+var lastKnownReachId = getReachIdFromUrl();
+
+setInterval(function() {
+  var currentReachId = getReachIdFromUrl();
+
+  if (currentReachId !== lastKnownReachId) {
+    lastKnownReachId = currentReachId;
+    initialise();
+  }
+}, 1000);
+   
 /* ------------------------------------------------------------------
    BEST-EFFORT CLEANUP ON TAB CLOSE
 
