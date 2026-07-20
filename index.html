@@ -552,9 +552,30 @@ header h1 {
 .summary-panel {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.summary-panel-scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px;
+}
+
+.summary-panel-footer {
+  flex-shrink: 0;
+  padding: 14px;
+  border-top: 1px solid #d0dce8;
   background: white;
+  display: flex;
+  justify-content: center;
+}
+
+.summary-panel-footer .confirm-button {
+  width: auto;
+  padding: 10px 28px;
 }
 
 .summary-group {
@@ -743,18 +764,21 @@ header h1 {
     <div class="assignment-dashboard-title">Assignment workflow</div>
     <div class="assignment-dashboard-header-actions">
       <button class="back-button" id="back-to-refinement-button" type="button" onclick="goBackToRefinement()">Back to selected measures</button>
-      <button class="back-button hidden" id="header-view-summary-button" type="button" onclick="showSummaryPanel()">View Summary</button>
+      <button class="confirm-button hidden" id="header-view-summary-button" type="button" onclick="showSummaryPanel()" style="width: auto; padding: 8px 16px;">View Summary</button>
     </div>
   </div>
   <div id="assignment-complete-banner" class="context-panel hidden" style="margin: 8px 14px; padding: 8px 14px; background: #f0fdf4; border-color: #22c55e;">
-    <span class="context-note" style="color: #166534;">All measure groups are assigned. You can review the summary above or continue making changes in any group.</span>
+    <span class="context-note" style="color: #166534;">All measure groups are assigned. Click <strong>View Summary</strong> above to review everything and submit the final reach assessment.</span>
   </div>
   <div id="assignment-tabs" class="assignment-tabs"></div>
   <div class="assignment-body" id="assignment-body">
     <div id="assignment-list-panel" class="assignment-list-panel"></div>
     <div id="assignment-tool-panel" class="assignment-tool-panel"></div>
   </div>
-  <div id="summary-panel" class="summary-panel hidden"></div>
+  <div id="summary-panel" class="summary-panel hidden">
+    <div id="summary-panel-scroll" class="summary-panel-scroll"></div>
+    <div id="summary-panel-footer" class="summary-panel-footer"></div>
+  </div>
 </div>
 
 <script>
@@ -3751,17 +3775,13 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
     return record.assignment_status === CONFIG.ASSIGNMENT_STATUS_PENDING || record.assignment_status === CONFIG.ASSIGNMENT_STATUS_UNCLASSIFIED;
   });
 
-  if (pendingRecords.length === 0) {
-    panel.innerHTML =
-      '<div class="tool-card">' +
-        '<div class="tool-hint" style="margin-bottom: 8px;">All selected measures in this group are already assigned. Use the tabs above to continue with another group, or view the summary once every group is done.</div>' +
-      '</div>';
-    return;
-  }
+  var hintText = pendingRecords.length > 0
+    ? "Once all measures above have been assigned on the map, confirm below."
+    : "All selected measures in this group are already assigned. Untick a measure above and confirm below to remove it, or use the tabs to continue with another group.";
 
   panel.innerHTML =
     '<div class="tool-card">' +
-      '<div class="tool-hint" style="margin-bottom: 8px;">Once all measures above have been assigned on the map, confirm below.</div>' +
+      '<div class="tool-hint" style="margin-bottom: 8px;">' + hintText + '</div>' +
       '<div class="context-actions" style="margin: 8px 0;">' +
         '<button class="confirm-button" onclick="confirmActiveGroupAssignment()">Confirm this group assignment</button>' +
       '</div>' +
@@ -4041,8 +4061,10 @@ async function showSummaryPanel() {
   document.getElementById("header-view-summary-button").classList.add("hidden");
   document.getElementById("summary-panel").classList.remove("hidden");
 
-  var panel = document.getElementById("summary-panel");
+  var panel = document.getElementById("summary-panel-scroll");
+  var footer = document.getElementById("summary-panel-footer");
   panel.innerHTML = '<div class="empty-state">Loading summary...</div>';
+  footer.innerHTML = "";
 
   var reachId = getReachIdFromUrl();
   var groupedRecords = getAssignedSummaryRecordsByGroup();
@@ -4054,11 +4076,8 @@ async function showSummaryPanel() {
     return total + groupedRecords[group].length;
   }, 0);
 
-  var finalSubmitSectionHtml =
-    '<div class="context-actions" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #d0dce8;">' +
-      '<button class="confirm-button" onclick="submitFinalReachAssessment()">Submit final reach assessment</button>' +
-    '</div>' +
-    '<div class="tool-hint" style="margin-top: 8px;">Submitting is final. No further changes can be made for this reach afterward.</div>';
+  footer.innerHTML =
+    '<button class="confirm-button" onclick="submitFinalReachAssessment()">Submit final reach assessment</button>';
 
   panel.innerHTML =
     '<div class="summary-header">' +
@@ -4072,7 +4091,7 @@ async function showSummaryPanel() {
     '<button class="back-button" type="button" onclick="hideSummaryPanel()" style="margin-bottom: 14px;">Back to assignment workflow</button>';
 
   if (groups.length === 0) {
-    panel.innerHTML += '<div class="summary-empty">No assigned measures are recorded for this reach.</div>' + finalSubmitSectionHtml;
+    panel.innerHTML += '<div class="summary-empty">No assigned measures are recorded for this reach.</div>';
     return;
   }
 
@@ -4118,10 +4137,6 @@ async function showSummaryPanel() {
 
     panel.appendChild(el);
   });
-
-  var finalSubmitWrapper = document.createElement("div");
-  finalSubmitWrapper.innerHTML = finalSubmitSectionHtml;
-  panel.appendChild(finalSubmitWrapper);
 }
 
 function getAssignedSummaryRecordsByGroup() {
@@ -4212,12 +4227,14 @@ function renderFinalizedReachState() {
   document.getElementById("header-view-summary-button").classList.add("hidden");
   document.getElementById("assignment-complete-banner").classList.add("hidden");
 
-  var panel = document.getElementById("summary-panel");
+  var panel = document.getElementById("summary-panel-scroll");
   panel.innerHTML =
     '<div class="tool-card">' +
       '<div class="assignment-title">Reach finalized</div>' +
       '<div class="tool-hint">This reach has been finalized. Select the next reach from the list to start a new measure assignment.</div>' +
     '</div>';
+
+  document.getElementById("summary-panel-footer").innerHTML = "";
 }
 
 /* ------------------------------------------------------------------
