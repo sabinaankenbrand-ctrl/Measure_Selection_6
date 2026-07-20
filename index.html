@@ -1383,6 +1383,27 @@ async function initialise() {
   }
 }
 
+/* ------------------------------------------------------------------
+   REACT TO REACH_ID CHANGES WITHOUT A FULL PAGE RELOAD
+
+   The Embed widget's iframe stays alive while Experience Builder just
+   updates the URL query string in the background (no reload). Since
+   initialise() only runs once on load, we poll for reach_id changes
+   and re-run initialise() whenever it changes, so the tool (and the
+   active_workflow highlight) stays in sync with the selected reach.
+------------------------------------------------------------------ */
+
+var lastKnownReachId = getReachIdFromUrl();
+
+setInterval(function() {
+  var currentReachId = getReachIdFromUrl();
+
+  if (currentReachId !== lastKnownReachId) {
+    lastKnownReachId = currentReachId;
+    initialise();
+  }
+}, 1000);
+
 function prefillContextQuestions() {
   if (currentReachIsImpounded === true) {
     setRadioValue("context-impounded", "yes");
@@ -3588,6 +3609,31 @@ function getAssignmentGroupSummary(group) {
   return summary;
 }
 
+/* ------------------------------------------------------------------
+   INLINE EDIT-TOOL INSTRUCTION HINTS
+
+   GROUP_EXTRA_EDIT_HINTS: extra sentence appended after the base
+   "please use the X edit tool..." instruction for specific groups.
+
+   GROUP_INSTRUCTION_COLORS: per-group accent color for the
+   assignment-measure-instruction box (border + tinted background),
+   so each editable measure type is visually distinct on the page.
+   Groups not listed here fall back to the original orange (#fdba74).
+------------------------------------------------------------------ */
+
+var GROUP_EXTRA_EDIT_HINTS = {
+  "Dike Measures": "New dikes can also be drawn with this tool if the required dike does not exist yet.",
+  "Groyne Measures": "If the groyne already exists, please trace it based on the satellite image. New groynes can also be drawn with this tool."
+};
+
+var GROUP_INSTRUCTION_COLORS = {
+  "Dike Measures": "#ce9260",
+  "Groyne Measures": "#ed8593",
+  "Ecological Restoration in the Reservior": "#d5c945",
+  "Riverbank Restoration": "#59b181",
+  "Sidearm Measures": "#7cb8f6"
+};
+
 function openAssignmentGroup(group) {
   if (!group) { return; }
 
@@ -3618,7 +3664,14 @@ function openAssignmentGroup(group) {
 
       if (isPending && GROUPS_WITH_INLINE_EDIT_INSTRUCTION.indexOf(group) !== -1) {
         var toolLabel = getEditToolLabelForAssignmentGroup(group, record);
-        instructionHtml = '<div class="assignment-measure-instruction">Please use the ' + escapeHtml(toolLabel) + ' to assign this measure on the map.</div>';
+        var baseText = 'Please use the ' + escapeHtml(toolLabel) + ' to assign this measure on the map.';
+        var extraHint = GROUP_EXTRA_EDIT_HINTS[group] ? ' ' + escapeHtml(GROUP_EXTRA_EDIT_HINTS[group]) : '';
+        var hintColor = GROUP_INSTRUCTION_COLORS[group] || '#fdba74';
+
+        instructionHtml =
+          '<div class="assignment-measure-instruction" style="border-color:' + hintColor + '; border-left: 4px solid ' + hintColor + '; background: ' + hintColor + '22;">' +
+            baseText + extraHint +
+          '</div>';
       }
 
       item.innerHTML =
@@ -3899,7 +3952,9 @@ var GEOMETRY_LAYERS = {
 var GROUPS_WITH_INLINE_EDIT_INSTRUCTION = [
   "Dike Measures",
   "Groyne Measures",
-  "Sidearm Measures"
+  "Sidearm Measures",
+  "Ecological Restoration in the Reservior",
+  "Riverbank Restoration"
 ];
 
 async function getDrawnGeometryCountForGroup(group, reachId) {
@@ -4417,27 +4472,7 @@ function normalizeMeasureId(value) {
 function escapeSqlLiteral(value) {
   return String(value).replaceAll("'", "''");
 }
-/* ------------------------------------------------------------------
-   REACT TO REACH_ID CHANGES WITHOUT A FULL PAGE RELOAD
 
-   The Embed widget's iframe stays alive while Experience Builder just
-   updates the URL query string in the background (no reload). Since
-   initialise() only runs once on load, we poll for reach_id changes
-   and re-run initialise() whenever it changes, so the tool (and the
-   active_workflow highlight) stays in sync with the selected reach.
------------------------------------------------------------------- */
-
-var lastKnownReachId = getReachIdFromUrl();
-
-setInterval(function() {
-  var currentReachId = getReachIdFromUrl();
-
-  if (currentReachId !== lastKnownReachId) {
-    lastKnownReachId = currentReachId;
-    initialise();
-  }
-}, 1000);
-   
 /* ------------------------------------------------------------------
    BEST-EFFORT CLEANUP ON TAB CLOSE
 
