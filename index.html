@@ -3622,8 +3622,8 @@ function getAssignmentGroupSummary(group) {
 ------------------------------------------------------------------ */
 
 var GROUP_EXTRA_EDIT_HINTS = {
-  "Dike Measures": "New dikes can also be drawn with this tool if the required dike does not exist yet.",
-  "Groyne Measures": "If the groyne already exists, please trace it based on the satellite image. New groynes can also be drawn with this tool."
+  "Dike Measures": "New dikes can also be drawn here.",
+  "Groyne Measures": "Existing groynes can be traced using satellite imagery as reference."
 };
 
 var GROUP_INSTRUCTION_COLORS = {
@@ -3632,6 +3632,16 @@ var GROUP_INSTRUCTION_COLORS = {
   "Ecological Restoration in the Reservior": "#d5c945",
   "Riverbank Restoration": "#59b181",
   "Sidearm Measures": "#7cb8f6"
+};
+
+// Darker text variants of GROUP_INSTRUCTION_COLORS, used for the instruction
+// text itself so it stays readable against the tinted background.
+var GROUP_INSTRUCTION_TEXT_COLORS = {
+  "Dike Measures": "#7a4a26",
+  "Groyne Measures": "#8f2f3d",
+  "Ecological Restoration in the Reservior": "#75690e",
+  "Riverbank Restoration": "#256b45",
+  "Sidearm Measures": "#1c5a94"
 };
 
 function openAssignmentGroup(group) {
@@ -3664,12 +3674,13 @@ function openAssignmentGroup(group) {
 
       if (isPending && GROUPS_WITH_INLINE_EDIT_INSTRUCTION.indexOf(group) !== -1) {
         var toolLabel = getEditToolLabelForAssignmentGroup(group, record);
-        var baseText = 'Please use the ' + escapeHtml(toolLabel) + ' to assign this measure on the map.';
+        var baseText = 'Use the <strong>' + escapeHtml(toolLabel) + '</strong> in the toolbar at the bottom of the page to assign this measure.';
         var extraHint = GROUP_EXTRA_EDIT_HINTS[group] ? ' ' + escapeHtml(GROUP_EXTRA_EDIT_HINTS[group]) : '';
         var hintColor = GROUP_INSTRUCTION_COLORS[group] || '#fdba74';
+        var hintTextColor = GROUP_INSTRUCTION_TEXT_COLORS[group] || '#9a3412';
 
         instructionHtml =
-          '<div class="assignment-measure-instruction" style="border-color:' + hintColor + '; border-left: 4px solid ' + hintColor + '; background: ' + hintColor + '22;">' +
+          '<div class="assignment-measure-instruction" style="border: 1px solid ' + hintColor + '; border-left: 6px solid ' + hintColor + '; background: ' + hintColor + '33; color: ' + hintTextColor + '; font-weight: 500;">' +
             baseText + extraHint +
           '</div>';
       }
@@ -3716,39 +3727,33 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
   });
 
   if (pendingRecords.length === 0) {
-    var nextGroupForCompleted = findNextGroupInOrderAfter(group);
-    var isEverythingComplete = !nextGroupForCompleted && allAssignmentGroupsComplete();
+    var isEverythingComplete = allAssignmentGroupsComplete();
 
-    var actionButtonHtml;
-    if (nextGroupForCompleted) {
-      actionButtonHtml = '<button class="confirm-button" onclick="goToGroup(\'' + escapeHtml(nextGroupForCompleted) + '\')">Next measure group</button>';
-    } else if (isEverythingComplete) {
-      actionButtonHtml = '<button class="confirm-button" onclick="showSummaryPanel()">View Summary</button>';
+    if (isEverythingComplete) {
+      panel.innerHTML =
+        '<div class="tool-card">' +
+          '<div class="tool-hint" style="margin-bottom: 8px;">All measure groups have been assigned.</div>' +
+          '<div class="tool-hint" style="margin-bottom: 8px;">No further changes can be made from this point onward.</div>' +
+          '<div class="context-actions" style="margin: 8px 0 0;">' +
+            '<button class="confirm-button" onclick="showSummaryPanel()">View Summary</button>' +
+          '</div>' +
+        '</div>';
     } else {
-      actionButtonHtml = '<button class="confirm-button" disabled>No more groups</button>';
+      panel.innerHTML =
+        '<div class="tool-card">' +
+          '<div class="tool-hint" style="margin-bottom: 8px;">All selected measures in this group are already assigned. Use the tabs above to continue with another group.</div>' +
+        '</div>';
     }
-
-    panel.innerHTML =
-      '<div class="tool-card">' +
-        '<div class="assignment-title">Group complete</div>' +
-        '<div class="tool-hint">All selected measures in this group are already assigned.</div>' +
-        '<div class="context-actions">' +
-          actionButtonHtml +
-        '</div>' +
-      '</div>';
     return;
   }
 
-  var nextGroup = findNextPendingAssignmentGroupAfter(group);
-
   panel.innerHTML =
     '<div class="tool-card">' +
-      '<div class="assignment-title">' + escapeHtml(group) + '</div>' +
-      '<div class="tool-hint">Once all measures above have been assigned on the map, confirm below.</div>' +
-      '<div class="context-actions">' +
+      '<div class="tool-hint" style="margin-bottom: 8px;">Once all measures above have been assigned on the map, confirm below.</div>' +
+      '<div class="context-actions" style="margin: 8px 0;">' +
         '<button class="confirm-button" onclick="confirmActiveGroupAssignment()">Confirm this group assignment</button>' +
       '</div>' +
-      '<div class="tool-hint">After confirming, this tool will automatically open the next pending assignment group: ' + escapeHtml(nextGroup || "none") + '.</div>' +
+      '<div class="tool-hint" style="margin-bottom: 8px;">After confirming, this tool will automatically open the next pending assignment group.</div>' +
     '</div>';
 }
 
