@@ -1650,17 +1650,7 @@ function updateProblemDisplay() {
    SELECTION LOGIC
 ------------------------------------------------------------------ */
 
-function setSuggestedMeasuresAsSelected() {
-  selected = {};
-
-  suggestedMeasureIds.forEach(function(id) {
-    var measure = getMeasureById(id);
-
-    if (measure) {
-      selected[id] = measure;
-    }
-  });
-}
+/* setSuggestedMeasuresAsSelected removed - superseded by applyExistingSelection() */
 
 function applyExistingSelection(existingMeasureIds) {
   var suggestedSet = {};
@@ -3786,20 +3776,9 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
     '</div>';
 }
 
-function goToGroup(group) {
-  if (!group) { return; }
-  activeAssignmentGroup = group;
-  renderAssignmentDashboard();
-}
+/* goToGroup removed - was only used by the removed 'Next measure group' navigation */
 
-function findNextGroupInOrderAfter(group) {
-  var groups = getAssignmentGroupsInOrder();
-  var startIndex = groups.indexOf(group);
-  if (startIndex === -1 || groups.length <= 1) { return null; }
-
-  var nextIndex = startIndex + 1;
-  return nextIndex < groups.length ? groups[nextIndex] : null;
-}
+/* findNextGroupInOrderAfter removed - was only used by the removed 'Next measure group' navigation */
 
 async function confirmActiveGroupAssignment() {
   var group = activeAssignmentGroup;
@@ -3916,18 +3895,7 @@ function findNextPendingAssignmentGroup() {
   return null;
 }
 
-function findNextPendingAssignmentGroupAfter(group) {
-  var groups = getAssignmentGroupsInOrder();
-  var startIndex = groups.indexOf(group);
-  if (startIndex === -1) { return findNextPendingAssignmentGroup(); }
-
-  for (var offset = 1; offset <= groups.length; offset++) {
-    var next = groups[(startIndex + offset) % groups.length];
-    var summary = getAssignmentGroupSummary(next);
-    if (summary.pending > 0 || summary.unclassified > 0) { return next; }
-  }
-  return null;
-}
+/* findNextPendingAssignmentGroupAfter removed - was only used by the removed auto-jump hint text */
 
 function findFirstAssignmentGroup() {
   var groups = getAssignmentGroupsInOrder();
@@ -4414,17 +4382,7 @@ function getImpoundmentDisplayText() {
   return " | Impoundment status unknown";
 }
 
-function getImpoundmentStatusTextForStatus() {
-  if (currentReachIsImpounded === true) {
-    return " for an impounded reach";
-  }
-
-  if (currentReachIsImpounded === false) {
-    return "; impoundment-only measures were hidden";
-  }
-
-  return "; impoundment status was not available";
-}
+/* getImpoundmentStatusTextForStatus removed - unused, superseded by getImpoundmentDisplayText */
 
 function getPendingAssignmentSummaryTextFromRecords(records) {
   var counts = {};
@@ -4449,30 +4407,7 @@ function getPendingAssignmentSummaryTextFromRecords(records) {
   return " Pending assignment: " + parts.join(", ") + ".";
 }
 
-function getPendingAssignmentSummaryText(measureIds) {
-  var counts = {};
-
-  measureIds.forEach(function(id) {
-    var rule = getAssignmentRuleForMeasure(id);
-
-    if (!rule || isAutoAssignRule(rule)) { return; }
-
-    var group = cleanRuleValue(rule.assignment_group) || "unclassified";
-    counts[group] = (counts[group] || 0) + 1;
-  });
-
-  var groups = Object.keys(counts).sort();
-
-  if (groups.length === 0) {
-    return "";
-  }
-
-  var parts = groups.map(function(group) {
-    return counts[group] + " " + group;
-  });
-
-  return " Pending assignment: " + parts.join(", ") + ".";
-}
+/* getPendingAssignmentSummaryText removed - superseded by getPendingAssignmentSummaryTextFromRecords */
 
 function cleanRuleValue(value) {
   if (value === null || value === undefined) { return ""; }
