@@ -764,11 +764,7 @@ header h1 {
     <div class="assignment-dashboard-title">Assignment workflow</div>
     <div class="assignment-dashboard-header-actions">
       <button class="back-button" id="back-to-refinement-button" type="button" onclick="goBackToRefinement()">Back to selected measures</button>
-      <button class="confirm-button hidden" id="header-view-summary-button" type="button" onclick="showSummaryPanel()" style="width: auto; padding: 8px 16px;">View Summary</button>
     </div>
-  </div>
-  <div id="assignment-complete-banner" class="context-panel hidden" style="margin: 8px 14px; padding: 8px 14px; background: #f0fdf4; border-color: #22c55e;">
-    <span class="context-note" style="color: #166534;">All measure groups are assigned. Click <strong>View Summary</strong> above to review everything and submit the final reach assessment.</span>
   </div>
   <div id="assignment-tabs" class="assignment-tabs"></div>
   <div class="assignment-body" id="assignment-body">
@@ -3590,16 +3586,6 @@ function showAssignmentDashboard() {
 function renderAssignmentDashboard() {
   renderAssignmentTabs();
   openAssignmentGroup(activeAssignmentGroup);
-  updateAssignmentCompletionUI();
-}
-
-function updateAssignmentCompletionUI() {
-  var isComplete = allAssignmentGroupsComplete();
-  var viewSummaryButton = document.getElementById("header-view-summary-button");
-  var banner = document.getElementById("assignment-complete-banner");
-
-  if (viewSummaryButton) { viewSummaryButton.classList.toggle("hidden", !isComplete); }
-  if (banner) { banner.classList.toggle("hidden", !isComplete); }
 }
 
 function renderAssignmentTabs() {
@@ -3774,6 +3760,18 @@ function renderAssignmentToolPanel(group, records, summary, panel) {
   var pendingRecords = records.filter(function(record) {
     return record.assignment_status === CONFIG.ASSIGNMENT_STATUS_PENDING || record.assignment_status === CONFIG.ASSIGNMENT_STATUS_UNCLASSIFIED;
   });
+
+  if (allAssignmentGroupsComplete()) {
+    panel.innerHTML =
+      '<div class="tool-card">' +
+        '<div class="context-actions" style="margin: 8px 0;">' +
+          '<button class="secondary-button" onclick="confirmActiveGroupAssignment()">Change selection</button>' +
+          '<button class="confirm-button" style="width: auto; padding: 8px 16px;" onclick="showSummaryPanel()">View Summary</button>' +
+        '</div>' +
+        '<div class="tool-hint" style="margin-top: 8px; color: #166534;">All measure groups are assigned. Click <strong>View Summary</strong> to review everything and submit the final reach assessment.</div>' +
+      '</div>';
+    return;
+  }
 
   var hintText = pendingRecords.length > 0
     ? "Once all measures above have been assigned on the map, confirm below."
@@ -4056,9 +4054,7 @@ async function showSummaryPanel() {
 
   document.getElementById("assignment-tabs").classList.add("hidden");
   document.getElementById("assignment-body").classList.add("hidden");
-  document.getElementById("assignment-complete-banner").classList.add("hidden");
   document.getElementById("back-to-refinement-button").classList.add("hidden");
-  document.getElementById("header-view-summary-button").classList.add("hidden");
   document.getElementById("summary-panel").classList.remove("hidden");
 
   var panel = document.getElementById("summary-panel-scroll");
@@ -4207,7 +4203,6 @@ function hideSummaryPanel() {
   document.getElementById("assignment-tabs").classList.remove("hidden");
   document.getElementById("assignment-body").classList.remove("hidden");
   document.getElementById("back-to-refinement-button").classList.remove("hidden");
-  updateAssignmentCompletionUI();
 }
 
 async function submitFinalReachAssessment() {
@@ -4224,8 +4219,6 @@ async function submitFinalReachAssessment() {
 
 function renderFinalizedReachState() {
   document.getElementById("back-to-refinement-button").classList.add("hidden");
-  document.getElementById("header-view-summary-button").classList.add("hidden");
-  document.getElementById("assignment-complete-banner").classList.add("hidden");
 
   var panel = document.getElementById("summary-panel-scroll");
   panel.innerHTML =
