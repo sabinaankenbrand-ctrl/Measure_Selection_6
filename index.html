@@ -4073,7 +4073,10 @@ async function showSummaryPanel() {
   }, 0);
 
   footer.innerHTML =
-    '<button class="confirm-button" onclick="submitFinalReachAssessment()">Submit final reach assessment</button>';
+    '<div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">' +
+      '<button class="confirm-button" onclick="submitFinalReachAssessment()">Submit final reach assessment</button>' +
+      '<div class="tool-hint" style="margin: 0; text-align: center;">This is final. No further changes can be made afterward.</div>' +
+    '</div>';
 
   panel.innerHTML =
     '<div class="summary-header">' +
