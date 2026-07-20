@@ -582,6 +582,74 @@ header h1 {
   color: #1187a7;
 }
 
+
+.summary-header {
+  border: 1px solid #d0dce8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: #eef7fa;
+}
+
+.summary-overview {
+  font-size: 0.78rem;
+  color: #4a6070;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.summary-group-meta {
+  font-size: 0.75rem;
+  color: #4a6070;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.summary-measure-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.summary-measure-row {
+  border: 1px solid #e1eaf2;
+  border-left: 4px solid #22c55e;
+  border-radius: 7px;
+  padding: 8px;
+  background: white;
+}
+
+.summary-measure-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.summary-measure-main .measure-name {
+  flex: 1;
+}
+
+.summary-measure-meta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: #4a6070;
+  line-height: 1.4;
+}
+
+.summary-meta-label {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.summary-empty {
+  border: 1px dashed #c8d7e3;
+  border-radius: 8px;
+  padding: 14px;
+  color: #4a6070;
+  background: #f8fbfd;
+  font-size: 0.8rem;
+}
+
 .assignment-dashboard-title {
   font-size: 0.78rem;
   font-weight: 700;
@@ -3902,40 +3970,137 @@ async function showSummaryPanel() {
   var panel = document.getElementById("summary-panel");
   panel.innerHTML = '<div class="empty-state">Loading summary...</div>';
 
-  var groups = getAssignmentGroupsInOrder();
   var reachId = getReachIdFromUrl();
+  var groupedRecords = getAssignedSummaryRecordsByGroup();
+  var groups = Object.keys(groupedRecords).sort(function(a, b) {
+    return getAssignmentGroupOrder(a) - getAssignmentGroupOrder(b) || a.localeCompare(b);
+  });
 
-  var rows = await Promise.all(groups.map(async function(group) {
-    var summary = getAssignmentGroupSummary(group);
-    var drawnResult = await getDrawnGeometryCountForGroup(group, reachId);
-    return { group: group, summary: summary, drawnResult: drawnResult };
-  }));
+  var totalAssignedMeasures = groups.reduce(function(total, group) {
+    return total + groupedRecords[group].length;
+  }, 0);
 
   panel.innerHTML =
-    '<div class="assignment-title">Reach summary</div>' +
-    '<div class="assignment-summary">All assignment groups for reach ' + escapeHtml(reachId) + ' are complete.</div>' +
+    '<div class="summary-header">' +
+      '<div class="assignment-title">Detailed reach summary</div>' +
+      '<div class="summary-overview">' +
+        '<strong>Reach:</strong> ' + escapeHtml(reachId || "unknown") + '<br>' +
+        '<strong>Country:</strong> ' + escapeHtml(activeCountryCode || "not set") + '<br>' +
+        '<strong>Assigned measures:</strong> ' + totalAssignedMeasures +
+      '</div>' +
+    '</div>' +
     '<button class="back-button" type="button" onclick="hideSummaryPanel()" style="margin-bottom: 14px;">Back to assignment workflow</button>';
 
-  rows.forEach(function(row) {
-    if (row.summary.total === 0) { return; }
+  if (groups.length === 0) {
+    panel.innerHTML += '<div class="summary-empty">No assigned measures are recorded for this reach.</div>';
+    return;
+  }
 
+  var rows = await Promise.all(groups.map(async function(group) {
+    var records = groupedRecords[group];
+    var drawnResult = await getDrawnGeometryCountForGroup(group, reachId);
+    return { group: group, records: records, drawnResult: drawnResult };
+  }));
+
+  rows.forEach(function(row) {
     var el = document.createElement("div");
     el.className = "summary-group";
 
-    var countsText = '<strong>' + row.summary.assigned + '</strong> measure(s) assigned';
+    var groupMeta = '<strong>' + row.records.length + '</strong> assigned measure(s)';
 
     if (row.drawnResult.status === "ok") {
-      countsText += '<br><strong>' + row.drawnResult.count + '</strong> geometry/geometries drawn for this reach';
+      groupMeta += ' | <strong>' + row.drawnResult.count + '</strong> geometry/geometries drawn for this reach';
     } else if (row.drawnResult.status === "error") {
-      countsText += '<br><span style="color:#c0392b;">Could not check drawn geometries (' + escapeHtml(row.drawnResult.errorMessage) + ')</span>';
+      groupMeta += ' | <span style="color:#c0392b;">Could not check drawn geometries (' + escapeHtml(row.drawnResult.errorMessage) + ')</span>';
     }
 
     el.innerHTML =
       '<div class="summary-group-name">' + escapeHtml(row.group) + '</div>' +
-      '<div class="summary-group-counts">' + countsText + '</div>';
+      '<div class="summary-group-meta">' + groupMeta + '</div>' +
+      '<div class="summary-measure-list"></div>';
+
+    var list = el.querySelector(".summary-measure-list");
+
+    row.records.forEach(function(record) {
+      var item = document.createElement("div");
+      item.className = "summary-measure-row";
+
+      item.innerHTML =
+        '<div class="summary-measure-main">' +
+          '<span class="measure-id">' + escapeHtml(record.measure_id) + '</span>' +
+          '<span class="measure-name">' + escapeHtml(record.measure_name) + '</span>' +
+          '<span class="assignment-status-badge assigned">assigned</span>' +
+        '</div>' +
+        '<div class="summary-measure-meta">' + buildAssignedMeasureMetaHtml(record) + '</div>';
+
+      list.appendChild(item);
+    });
 
     panel.appendChild(el);
   });
+}
+
+function getAssignedSummaryRecordsByGroup() {
+  var groups = {};
+
+  assignmentRecords
+    .filter(function(record) {
+      return record.keep !== false && record.assignment_status === CONFIG.ASSIGNMENT_STATUS_ASSIGNED;
+    })
+    .sort(function(a, b) {
+      return getMeasureNumber(a.measure_id) - getMeasureNumber(b.measure_id);
+    })
+    .forEach(function(record) {
+      var group = record.assignment_group || "Unclassified";
+      if (!groups[group]) { groups[group] = []; }
+      groups[group].push(record);
+    });
+
+  return groups;
+}
+
+function buildAssignedMeasureMetaHtml(record) {
+  var parts = [];
+
+  if (record.assignment_target) {
+    parts.push('<span class="summary-meta-label">Target:</span> ' + escapeHtml(record.assignment_target));
+  }
+
+  if (record.assigned_layer) {
+    parts.push('<span class="summary-meta-label">Assigned layer:</span> ' + escapeHtml(record.assigned_layer));
+  }
+
+  if (record.assigned_feature_id) {
+    parts.push('<span class="summary-meta-label">Feature ID:</span> ' + escapeHtml(record.assigned_feature_id));
+  }
+
+  if (record.assigned_at) {
+    parts.push('<span class="summary-meta-label">Assigned at:</span> ' + escapeHtml(formatSummaryDate(record.assigned_at)));
+  }
+
+  if (record.assignment_notes) {
+    parts.push('<span class="summary-meta-label">Notes:</span> ' + escapeHtml(record.assignment_notes));
+  }
+
+  if (parts.length === 0) {
+    return '<span class="summary-meta-label">Assignment details:</span> no additional details recorded';
+  }
+
+  return parts.join('<br>');
+}
+
+function formatSummaryDate(value) {
+  var dateValue = Number(value);
+  if (!isNaN(dateValue)) {
+    return new Date(dateValue).toLocaleString();
+  }
+
+  var parsed = Date.parse(value);
+  if (!isNaN(parsed)) {
+    return new Date(parsed).toLocaleString();
+  }
+
+  return String(value);
 }
 
 function hideSummaryPanel() {
