@@ -3622,8 +3622,13 @@ function getAssignmentGroupSummary(group) {
 ------------------------------------------------------------------ */
 
 var GROUP_EXTRA_EDIT_HINTS = {
-  "Dike Measures": "New dikes can also be drawn here.",
   "Groyne Measures": "Existing groynes can be traced using satellite imagery as reference."
+};
+
+// Full replacement of the base instruction sentence for specific groups,
+// where the generic "use the X edit tool there" phrasing doesn't fit.
+var GROUP_INSTRUCTION_BASE_TEXT_OVERRIDES = {
+  "Dike Measures": 'Open the editor using the <strong>editor toolbar button</strong> at the bottom of the page, then use the editor to either select an existing dike to assign this measure to it, or draw a new dike.'
 };
 
 var GROUP_INSTRUCTION_COLORS = {
@@ -3674,13 +3679,14 @@ function openAssignmentGroup(group) {
 
       if (isPending && GROUPS_WITH_INLINE_EDIT_INSTRUCTION.indexOf(group) !== -1) {
         var toolLabel = getEditToolLabelForAssignmentGroup(group, record);
-        var baseText = 'Open the editor using the <strong>editor toolbar button</strong> at the bottom of the page, then use the ' + escapeHtml(toolLabel) + ' there to assign this measure.';
+        var baseText = GROUP_INSTRUCTION_BASE_TEXT_OVERRIDES[group] ||
+          ('Open the editor using the <strong>editor toolbar button</strong> at the bottom of the page, then use the <strong>' + escapeHtml(toolLabel) + '</strong> there to assign this measure.');
         var extraHint = GROUP_EXTRA_EDIT_HINTS[group] ? ' ' + escapeHtml(GROUP_EXTRA_EDIT_HINTS[group]) : '';
         var hintColor = GROUP_INSTRUCTION_COLORS[group] || '#fdba74';
         var hintTextColor = GROUP_INSTRUCTION_TEXT_COLORS[group] || '#9a3412';
 
         instructionHtml =
-          '<div class="assignment-measure-instruction" style="border: 1px solid ' + hintColor + '; border-left: 6px solid ' + hintColor + '; background: ' + hintColor + '33; color: ' + hintTextColor + '; font-weight: 500;">' +
+          '<div class="assignment-measure-instruction" style="border: 1px solid ' + hintColor + '; border-left: 6px solid ' + hintColor + '; background: ' + hintColor + '33; color: ' + hintTextColor + ';">' +
             baseText + extraHint +
           '</div>';
       }
