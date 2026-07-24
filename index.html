@@ -778,33 +778,27 @@ header h1 {
 </div>
 
 <script>
+/* ==================================================================
+   EDITABLE CONFIGURATION
+
+   All service URLs, access tokens and ArcGIS field names are defined
+   here at the top of the script. In normal use, country deployment
+   changes should be made only in COUNTRY_CONFIGS. Shared schema changes
+   should be made in the FIELD_* section of CONFIG.
+
+   Required URL parameters:
+     ?country=CZ
+     ?reach_id=<reach identifier>
+
+   The country code must exist in COUNTRY_CONFIGS. The script will stop
+   rather than silently use another country's services.
+================================================================== */
+
 /* ------------------------------------------------------------------
-   CONFIGURATION
+   1. COUNTRY-SPECIFIC SERVICE URLS
 
-   REQUIRED CHANGES BEFORE PUBLISHING:
-   1. Replace REACH_PROBLEM_LAYER_URL with the REST URL of the hosted
-      feature layer/table that stores one row per reach and the 56
-      problem fields.
-   2. SELECTED_MEASURES_TABLE_URL should point to the hosted table where
-      the refined measure selections are stored.
-   3. FIELD_PROBLEM_REACH_ID must exist in the reach-problem layer.
-   4. FIELD_SELECTED_REACH_ID must exist in the selected-measures table.
-   5. Problem fields in the reach-problem layer should use the same names
-      as the matrix problem IDs, for example c_1_1, r_1_2, etc.
-   6. Problem values used for suggestions are 1 and 2.
------------------------------------------------------------------- */
-
-/* ------------------------------------------------------------------
-   COUNTRY CONFIGURATION
-
-   This lets ONE HTML file serve multiple Danube countries.
-   Which country is active is decided purely by the ?country=XX
-   parameter in the URL (e.g. ?country=CZ or ?country=SK).
-
-   Add a new entry here whenever a new country's tables/layers exist.
-   Only the 5 URLs that differ per country need to be listed —
-   everything else in CONFIG (field names, labels, rules) stays the
-   same for every country.
+   Add one object for each country. These values overwrite the matching
+   URL properties in CONFIG before any ArcGIS request is sent.
 ------------------------------------------------------------------ */
 var COUNTRY_CONFIGS = {
   "CZ": {
@@ -814,146 +808,61 @@ var COUNTRY_CONFIGS = {
     ASSIGNMENT_SESSION_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measure_Assignment_Session/FeatureServer/0",
     DAM_MEASURES_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Point_Measures/FeatureServer/17"
   },
+
   "SK": {
-    // TODO: replace MEASURE_STATUS_LAYER_URL once that layer exists in ArcGIS Online.
     REACH_PROBLEM_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/SK_test/FeatureServer/0",
     SELECTED_MEASURES_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Reach_Selected_Measures_SA/FeatureServer/0",
     MEASURE_STATUS_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Reach_Measures_Updated/FeatureServer/10",
-    // Shared across all countries - see comments on ASSIGNMENT_SESSION_TABLE_URL
-    // and DAM_MEASURES_LAYER_URL in the CZ block above for why.
     ASSIGNMENT_SESSION_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measure_Assignment_Session/FeatureServer/0",
     DAM_MEASURES_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Point_Measures/FeatureServer/17"
   }
 };
 
-// Reads ?country=XX from the page URL (case-insensitive, trims stray
-// spaces the same way getReachIdFromUrl() does for reach_id).
-// Returns "" if no country parameter was supplied at all.
-function getCountryCode() {
-  var params = new URLSearchParams(window.location.search);
-  var raw = params.get("country") || params.get("Country") || params.get("COUNTRY") || "";
-  return String(raw).replace(/\u00a0/g, " ").trim().toUpperCase();
-}
+/* ------------------------------------------------------------------
+   2. SHARED URL DEFAULTS, TOKENS AND FIELD NAMES
 
-// Looks up the country code in COUNTRY_CONFIGS and overwrites just
-// those 5 keys inside the shared CONFIG object. Everything else in
-// CONFIG (field names, rules, labels) is left untouched.
-// Must run BEFORE initialise(), so the very first query already
-// targets the correct country's tables.
-// If the country code doesn't match any entry (missing/typo'd
-// ?country= parameter), CONFIG simply keeps its original hard-coded
-// values (currently the CZ URLs) and a warning is logged to the
-// console so it's easy to spot during testing.
-function applyCountryConfig(config) {
-  var code = getCountryCode();
-  var override = COUNTRY_CONFIGS[code];
-
-  if (!override) {
-    console.warn("No country config found for '" + code + "'. Using base CONFIG values (currently CZ defaults).");
-    return code;
-  }
-
-  Object.keys(override).forEach(function(key) {
-    config[key] = override[key];
-  });
-
-  return code;
-}
-
+   URL defaults are placeholders that are replaced by COUNTRY_CONFIGS.
+   They remain here so every URL variable is visible in one place and
+   CONFIG always has a complete structure.
+------------------------------------------------------------------ */
 var CONFIG = {
-  REACH_PROBLEM_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/CZtest_data/FeatureServer/0",
+  // ---- ArcGIS service URLs -----------------------------------------
+  REACH_PROBLEM_LAYER_URL: "",
+  SELECTED_MEASURES_TABLE_URL: "",
+  MEASURE_STATUS_LAYER_URL: "",
+  ASSIGNMENT_SESSION_TABLE_URL: "",
+  DAM_MEASURES_LAYER_URL: "",
 
-  SELECTED_MEASURES_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Reach_Selected_Measures/FeatureServer/0",
-
-  // Optional but recommended:
-  // This layer is a copy of the reach layer with one field per measure
-  // named like D4A_01, D4A_02, etc. On confirm, only fields that actually exist in this layer are updated.
-  MEASURE_STATUS_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measures_reach_test/FeatureServer/0",
-
+  // ---- ArcGIS access tokens ---------------------------------------
+  // Leave blank for publicly accessible services.
   REACH_PROBLEM_TOKEN: "",
   SELECTED_MEASURES_TOKEN: "",
   MEASURE_STATUS_TOKEN: "",
-
-  // Session table used to keep the active reach and assignment group alive
-  // even when the map selection changes while the user edits dikes/groynes/barriers.
-  ASSIGNMENT_SESSION_TABLE_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Measure_Assignment_Session/FeatureServer/0",
   ASSIGNMENT_SESSION_TOKEN: "",
-  FIELD_SESSION_ID: "session_id",
-  FIELD_SESSION_ACTIVE_REACH_ID: "active_reach_id",
-  FIELD_SESSION_ACTIVE_ASSIGNMENT_GROUP: "active_assignment_group",
-  FIELD_SESSION_ACTIVE_ASSIGNMENT_TARGET: "active_assignment_target",
-  FIELD_SESSION_ACTIVE_GEOMETRY_TYPE: "active_geometry_type",
-  FIELD_SESSION_WORKFLOW_STATUS: "workflow_status",
-  FIELD_SESSION_UPDATED_AT: "updated_at",
-  FIELD_SESSION_ACTIVE_EDIT_TOOL: "active_edit_tool",
-  FIELD_SESSION_ACTIVE_MEASURE_IDS: "active_measure_ids",
-  FIELD_SESSION_ACTIVE_MEASURE_COUNT: "active_measure_count",
-  // Only needed if ASSIGNMENT_SESSION_TABLE_URL is the SAME table for
-  // every country (shared table). Records which country a session row
-  // belongs to, since the table itself no longer implies the country.
-  FIELD_SESSION_COUNTRY: "country",
-  // A session row is considered stale (abandoned) if it hasn't been
-  // updated in this many minutes. Cleaned up opportunistically whenever
-  // anyone loads the tool - not a guaranteed real-time removal, but
-  // reliable regardless of how the old session actually ended.
-  SESSION_STALE_MINUTES: 30,
-
-  // Dam/barrier point layer used for automatic assignment of selected
-  // dam/barrier measures D4A_001-D4A_014, D4A_027-D4A_038 and D4A_052-D4A_057.
-  DAM_MEASURES_LAYER_URL: "https://iwah-public.boku.ac.at/server/rest/services/Hosted/Dam_Measures_Updated/FeatureServer/0",
   DAM_MEASURES_TOKEN: "",
-  DAM_MEASURES_LAYER_NAME: "Dam_Measures_Updated",
-  // For automatic dam/barrier assignment, prefer the downstream/start barrier,
-  // then a barrier inside the reach. Do not fall back to D4A_ID_END, because
-  // reaches are digitised downstream → upstream and END represents the upstream end.
-  FIELD_DAM_REACH_ID_START: "D4A_ID_START",
-  FIELD_DAM_REACH_ID_MIDDLE: "D4A_ID_MIDDLE",
-  FIELD_DAM_REACH_ID_END: "D4A_ID_END",
-  AUTO_ASSIGN_DAM_MEASURES_TO_BARRIER_LAYER: true,
 
-  // true = keep the dam/barrier layer synchronized with the current selection.
-  // Selected dam/barrier measures become 1; unselected dam/barrier measures
-  // in the same measure set become 0 on the matched barrier feature.
-  RESET_UNSELECTED_DAM_MEASURE_FIELDS_TO_ZERO: true,
-
-  UPDATE_ONLY_CURRENT_REACH: true,
-  USE_EXISTING_SELECTION_IF_AVAILABLE: true,
-
-  // Field used to find the selected reach in the reach/problem layer
+  // ---- Reach/problem-layer fields ---------------------------------
   FIELD_PROBLEM_REACH_ID: "D4A_ID",
+  FIELD_REACH_IS_IMPOUNDED: "is_impounded",
+  FIELD_ASSESSMENT_STATUS: "assessment_status",
+  FIELD_ASSESSMENT_DATE: "assessment_date",
+  FIELD_SELECTED_MEASURE_COUNT: "selected_measure_count",
+  FIELD_ASSIGNED_MEASURE_COUNT: "assigned_measure_count",
+  FIELD_PENDING_ASSIGNMENT_COUNT: "pending_assignment_count",
+  FIELD_ASSESSED_BY: "assessed_by",
+  FIELD_LAST_ASSIGNMENT_GROUP: "last_assignment_group",
+  FIELD_REACH_ASSESSMENT_NOTES: "assessment_notes",
+  FIELD_ACTIVE_WORKFLOW: "active_workflow",
+  FIELD_ACTIVE_SESSION_ID: "active_session_id",
+  FIELD_ACTIVE_WORKFLOW_AT: "active_workflow_at",
 
-  // Field used to store/load the reach ID in the selected-measures table
+  // ---- Selected-measures-table fields -----------------------------
   FIELD_SELECTED_REACH_ID: "reach_id",
-
-  // Field used to find the selected reach in the measure-status layer
-  // Usually this should be the same field as the problem layer, e.g. D4A_ID.
-  FIELD_MEASURE_STATUS_REACH_ID: "d4a_id",
-
-  // ObjectID field in the measure-status layer. Usually OBJECTID.
-  FIELD_MEASURE_STATUS_OBJECTID: "OBJECTID",
-
-  // true = after confirm, selected measure fields that exist in the target layer become 1
-  // and existing non-selected D4A fields become 0.
-  // The script matches internal IDs D4A_001..D4A_093 to layer fields D4A_01..D4A_93.
-  // D4A fields that do not exist in the target layer are ignored safely.
-  RESET_UNSELECTED_MEASURE_FIELDS_TO_ZERO: true,
-
-  ACTIVE_PROBLEM_VALUES: [1, 2],
-
   FIELD_MEASURE_ID: "measure_id",
   FIELD_MEASURE_NAME: "measure_name",
   FIELD_MEASURE_GROUP: "measure_group",
   FIELD_SELECTED_AT: "selected_at",
   FIELD_SELECTION_STATUS: "selection_status",
-
-  // Optional field in the reach/problem layer.
-  // Values can be 1/0, yes/no, true/false, or impounded/not_impounded.
-  // It can also be supplied in the URL as ?is_impounded=1 or ?impounded=yes.
-  FIELD_REACH_IS_IMPOUNDED: "is_impounded",
-  USE_IMPOUNDMENT_FILTER: true,
-
-  // Assignment workflow fields in the selected-measures table.
-  // These allow later tools to show only measures that still need spatial assignment.
   FIELD_ASSIGNMENT_GROUP: "assignment_group",
   FIELD_ASSIGNMENT_TARGET: "assignment_target",
   FIELD_GEOMETRY_TYPE: "geometry_type",
@@ -963,51 +872,82 @@ var CONFIG = {
   FIELD_ASSIGNED_LAYER: "assigned_layer",
   FIELD_ASSIGNED_AT: "assigned_at",
   FIELD_EXCLUSION_REASON: "exclusion_reason",
-
   FIELD_GROUP_ORDER: "group_order",
   FIELD_ASSIGNMENT_NOTES: "assignment_notes",
   FIELD_FILTER_IMPOUNDED_ANSWER: "filter_impounded_answer",
   FIELD_FILTER_BARRIER_ANSWER: "filter_barrier_answer",
 
-  // Assessment tracking fields in the reach/problem layer.
-  // These fields drive Experience Builder symbology, filters and progress lists.
-  FIELD_ASSESSMENT_STATUS: "assessment_status",
-  FIELD_ASSESSMENT_DATE: "assessment_date",
-  FIELD_SELECTED_MEASURE_COUNT: "selected_measure_count",
-  FIELD_ASSIGNED_MEASURE_COUNT: "assigned_measure_count",
-  FIELD_PENDING_ASSIGNMENT_COUNT: "pending_assignment_count",
-  FIELD_ASSESSED_BY: "assessed_by",
-  FIELD_LAST_ASSIGNMENT_GROUP: "last_assignment_group",
-  FIELD_REACH_ASSESSMENT_NOTES: "assessment_notes",
+  // ---- Reach measure-status-layer fields --------------------------
+  FIELD_MEASURE_STATUS_REACH_ID: "d4a_id",
+  FIELD_MEASURE_STATUS_OBJECTID: "OBJECTID",
 
-  // Persistent active-workflow highlight fields in the reach/problem layer.
-  // Use these fields in a duplicate map layer filtered to active_workflow = 1
-  // and active_session_id = default to keep the reach highlighted while
-  // users select/edit dikes, groynes, barriers or other layers.
-  FIELD_ACTIVE_WORKFLOW: "active_workflow",
-  FIELD_ACTIVE_SESSION_ID: "active_session_id",
-  FIELD_ACTIVE_WORKFLOW_AT: "active_workflow_at",
+  // ---- Assignment-session-table fields ----------------------------
+  FIELD_SESSION_ID: "session_id",
+  FIELD_SESSION_COUNTRY: "country",
+  FIELD_SESSION_ACTIVE_REACH_ID: "active_reach_id",
+  FIELD_SESSION_ACTIVE_ASSIGNMENT_GROUP: "active_assignment_group",
+  FIELD_SESSION_ACTIVE_ASSIGNMENT_TARGET: "active_assignment_target",
+  FIELD_SESSION_ACTIVE_GEOMETRY_TYPE: "active_geometry_type",
+  FIELD_SESSION_WORKFLOW_STATUS: "workflow_status",
+  FIELD_SESSION_UPDATED_AT: "updated_at",
+  FIELD_SESSION_ACTIVE_EDIT_TOOL: "active_edit_tool",
+  FIELD_SESSION_ACTIVE_MEASURE_IDS: "active_measure_ids",
+  FIELD_SESSION_ACTIVE_MEASURE_COUNT: "active_measure_count",
+
+  // ---- Dam/barrier-layer fields -----------------------------------
+  FIELD_DAM_REACH_ID_START: "D4A_ID_START",
+  FIELD_DAM_REACH_ID_MIDDLE: "D4A_ID_MIDDLE",
+  FIELD_DAM_REACH_ID_END: "D4A_ID_END",
+
+  /* ----------------------------------------------------------------
+     3. WORKFLOW OPTIONS AND CONSTANT VALUES
+
+     These settings control behavior but are not service URLs or field
+     names. Change them only when the workflow itself should change.
+  ---------------------------------------------------------------- */
+
+  // Name written into assignment records for the dam/barrier layer.
+  DAM_MEASURES_LAYER_NAME: "Dam_Measures_Updated",
+
+  // Problem values treated as active when generating suggestions.
+  ACTIVE_PROBLEM_VALUES: [1, 2],
+
+  // Context filtering.
+  USE_IMPOUNDMENT_FILTER: true,
+
+  // Existing-selection and update behavior.
+  UPDATE_ONLY_CURRENT_REACH: true,
+  USE_EXISTING_SELECTION_IF_AVAILABLE: true,
+  RESET_UNSELECTED_MEASURE_FIELDS_TO_ZERO: true,
+  UPDATE_MEASURE_STATUS_WITH_AUTO_REACH_MEASURES_ONLY: true,
+
+  // Automatic dam/barrier assignment behavior. START is preferred
+  // because reaches are digitised downstream to upstream. MIDDLE is
+  // used as the fallback; END is intentionally not used.
+  AUTO_ASSIGN_DAM_MEASURES_TO_BARRIER_LAYER: true,
+  RESET_UNSELECTED_DAM_MEASURE_FIELDS_TO_ZERO: true,
+
+  // Active-workflow highlight values.
   ACTIVE_WORKFLOW_ON_VALUE: 1,
   ACTIVE_WORKFLOW_OFF_VALUE: 0,
 
-  // Numeric coded values for assessment_status in the reach/problem layer.
+  // Assessment-status coded values.
   ASSESSMENT_STATUS_NOT_ASSESSED: 0,
   ASSESSMENT_STATUS_MEASURES_SELECTED: 1,
   ASSESSMENT_STATUS_ASSIGNMENT_PENDING: 2,
   ASSESSMENT_STATUS_FULLY_ASSIGNED: 3,
 
-  // Values written into the assignment workflow fields.
+  // Assignment-status values written to the selected-measures table.
   ASSIGNMENT_STATUS_ASSIGNED: "assigned",
   ASSIGNMENT_STATUS_PENDING: "pending",
   ASSIGNMENT_STATUS_UNCLASSIFIED: "unclassified",
   ASSIGNED_LAYER_REACH: "reach",
 
-  // true = only measures that are automatically assigned to the selected reach
-  // are written into the reach-based measure-status layer.
-  UPDATE_MEASURE_STATUS_WITH_AUTO_REACH_MEASURES_ONLY: true,
+  // Session rows older than this value are treated as abandoned and
+  // removed opportunistically when the tool is loaded.
+  SESSION_STALE_MINUTES: 30,
 
-  // Text shown in the assignment dashboard. These labels should match the
-  // names of the edit tools/panels you create in Experience Builder.
+  // Labels must match the corresponding Experience Builder edit tools.
   ASSIGNMENT_EDIT_TOOL_LABELS: {
     "Dam and Barrier Measures": "Edit Barrier tool",
     "Dike Measures": "Dike edit tool",
@@ -1021,6 +961,39 @@ var CONFIG = {
     "Unclassified": "relevant Experience Builder edit tool"
   }
 };
+
+/* ------------------------------------------------------------------
+   COUNTRY CONFIGURATION HELPERS
+
+   These functions are below the complete editable configuration so no
+   executable code appears before the URL and field definitions.
+------------------------------------------------------------------ */
+
+// Read and normalize the required ?country=XX URL parameter.
+function getCountryCode() {
+  var params = new URLSearchParams(window.location.search);
+  var raw = params.get("country") || params.get("Country") || params.get("COUNTRY") || "";
+  return String(raw).replace(/\u00a0/g, " ").trim().toUpperCase();
+}
+
+// Apply only the country-specific service URLs to the shared CONFIG.
+// Return an empty string when the country is missing or unsupported.
+function applyCountryConfig(config) {
+  var code = getCountryCode();
+  var override = COUNTRY_CONFIGS[code];
+
+  if (!override) {
+    console.error("No valid country configuration was found for '" + code + "'.");
+    return "";
+  }
+
+  Object.keys(override).forEach(function(key) {
+    config[key] = override[key];
+  });
+
+  return code;
+}
+
 
 /* ------------------------------------------------------------------
    STATIC MEASURE DATA FROM D4A LOOKUP TABLE
@@ -1353,6 +1326,12 @@ async function initialise() {
   safeCleanupStaleAssignmentSessions();
 
   var reachId = getReachIdFromUrl();
+
+  if (!activeCountryCode) {
+    setStatus("No valid country was found in the URL. Open this page with ?country=CZ (or another configured country).", "error");
+    setEmptyMeasureList("Country configuration is missing.");
+    return;
+  }
 
   if (!reachId) {
     setStatus("No reach_id was found in the URL. Open this page with ?reach_id=YOUR_REACH_ID.", "error");
@@ -2426,32 +2405,6 @@ async function updateDamBarrierFeatures(features) {
   return result;
 }
 
-function buildGenericUpdateFeaturesErrorMessage(result, prefix) {
-  if (!result || !result.updateResults || result.updateResults.length === 0) {
-    return prefix + ": ArcGIS updateFeatures returned no updateResults.";
-  }
-
-  var errors = result.updateResults
-    .filter(function(r) { return r.success !== true; })
-    .map(function(r, index) {
-      if (!r.error) {
-        return "Row " + (index + 1) + ": unsuccessful update with no ArcGIS error details.";
-      }
-
-      var parts = ["Row " + (index + 1)];
-      if (r.error.code !== undefined) { parts.push("code " + r.error.code); }
-      if (r.error.message) { parts.push(r.error.message); }
-      if (r.error.description) { parts.push(r.error.description); }
-      return parts.join(": ");
-    });
-
-  if (errors.length === 0) {
-    return prefix + ": ArcGIS updateFeatures returned an unsuccessful result, but no detailed error was provided.";
-  }
-
-  return prefix + ": " + errors.join(" | ");
-}
-
 
 /* ------------------------------------------------------------------
    ARCGIS REST FUNCTIONS FOR MEASURE-STATUS FEATURE LAYER
@@ -3105,7 +3058,10 @@ function getSessionId() {
   var stored = sessionStorage.getItem(storageKey);
   if (stored) { return stored; }
 
-  var generated = "session_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+  var generated = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? "session_" + crypto.randomUUID()
+    : "session_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+
   sessionStorage.setItem(storageKey, generated);
   return generated;
 }
@@ -3243,14 +3199,11 @@ async function safeUpsertAssignmentSession(attributes) {
 }
 
 async function upsertAssignmentSession(attributes) {
-  // Keyed by country, not session_id: session_id can change unexpectedly
-  // between calls (sessionStorage does not persist reliably inside the
-  // sandboxed Embed widget iframe), so using it as the lookup key would
-  // create a new row every time instead of updating the existing one.
-  // Country is stable for the whole time a given country's tool is open,
-  // and naturally keeps CZ and SK from overwriting each other's row in
-  // this shared table.
-  var objectIds = await queryAssignmentSessionObjectIdsForCountry(activeCountryCode);
+  // Use a composite key so concurrent users from the same country do not
+  // overwrite one another. The session ID is generated once per browser tab
+  // and can also be supplied explicitly through ?session_id=.
+  var sessionId = cleanSessionValue(attributes[CONFIG.FIELD_SESSION_ID] || getSessionId());
+  var objectIds = await queryAssignmentSessionObjectIds(activeCountryCode, sessionId);
 
   if (objectIds.length > 0) {
     var info = await getAssignmentSessionTableInfo();
@@ -3262,9 +3215,12 @@ async function upsertAssignmentSession(attributes) {
   return addAssignmentSessionRow(attributes);
 }
 
-async function queryAssignmentSessionObjectIdsForCountry(countryCode) {
+async function queryAssignmentSessionObjectIds(countryCode, sessionId) {
   var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/query";
-  var where = CONFIG.FIELD_SESSION_COUNTRY + " = '" + escapeSqlLiteral(countryCode) + "'";
+  var where = [
+    CONFIG.FIELD_SESSION_COUNTRY + " = '" + escapeSqlLiteral(countryCode) + "'",
+    CONFIG.FIELD_SESSION_ID + " = '" + escapeSqlLiteral(sessionId) + "'"
+  ].join(" AND ");
 
   var formData = new FormData();
   formData.append("f", "json");
@@ -3655,7 +3611,9 @@ var GROUP_INSTRUCTION_COLORS = {
   "Groyne Measures": "#ed8593",
   "Ecological Restoration in the Reservior": "#d5c945",
   "Riverbank Restoration": "#59b181",
-  "Sidearm Measures": "#7cb8f6"
+  "Sidearm Measures": "#7cb8f6",
+  "Gravel Bars": "#84d3dc",
+  "Sediment Feeding/Dredging": "#c0afd3"
 };
 
 // Darker text variants of GROUP_INSTRUCTION_COLORS, used for the instruction
@@ -3665,7 +3623,9 @@ var GROUP_INSTRUCTION_TEXT_COLORS = {
   "Groyne Measures": "#8f2f3d",
   "Ecological Restoration in the Reservior": "#75690e",
   "Riverbank Restoration": "#256b45",
-  "Sidearm Measures": "#1c5a94"
+  "Sidearm Measures": "#1c5a94",
+  "Gravel Bars": "#1f6b73",
+  "Sediment Feeding/Dredging": "#5b4a7a"
 };
 
 function openAssignmentGroup(group) {
@@ -3956,7 +3916,9 @@ var GROUPS_WITH_INLINE_EDIT_INSTRUCTION = [
   "Groyne Measures",
   "Sidearm Measures",
   "Ecological Restoration in the Reservior",
-  "Riverbank Restoration"
+  "Riverbank Restoration",
+  "Gravel Bars",
+  "Sediment Feeding/Dredging"
 ];
 
 async function getDrawnGeometryCountForGroup(group, reachId) {
@@ -4490,12 +4452,15 @@ function escapeSqlLiteral(value) {
 window.addEventListener("pagehide", function() {
   if (!isAssignmentSessionConfigured()) { return; }
 
-  // Keyed by country here too, consistent with upsertAssignmentSession -
-  // session_id is not reliable across reloads in this embedded context.
   var url = CONFIG.ASSIGNMENT_SESSION_TABLE_URL.replace(/\/$/, "") + "/deleteFeatures";
   var formData = new FormData();
+  var where = [
+    CONFIG.FIELD_SESSION_COUNTRY + " = '" + escapeSqlLiteral(activeCountryCode) + "'",
+    CONFIG.FIELD_SESSION_ID + " = '" + escapeSqlLiteral(getSessionId()) + "'"
+  ].join(" AND ");
+
   formData.append("f", "json");
-  formData.append("where", CONFIG.FIELD_SESSION_COUNTRY + " = '" + escapeSqlLiteral(activeCountryCode) + "'");
+  formData.append("where", where);
   if (CONFIG.ASSIGNMENT_SESSION_TOKEN) {
     formData.append("token", CONFIG.ASSIGNMENT_SESSION_TOKEN);
   }
